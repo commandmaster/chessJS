@@ -28,17 +28,47 @@ class Action{
 
         switch(piece){
             case this.pieceTypes.pawn:
-                return this.MovePawn(board, startX, startY, endX, endY);
+                if (this.MovePawn(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
             case this.pieceTypes.rook:
-                return this.MoveRook(board, startX, startY, endX, endY);
+                if (this.MoveRook(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
             case this.pieceTypes.knight:
-                return this.MoveKnight(board, startX, startY, endX, endY);
+                if (this.MoveKnight(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
             case this.pieceTypes.bishop:
-                return this.MoveBishop(board, startX, startY, endX, endY);
+                if (this.MoveBishop(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
             case this.pieceTypes.queen:
-                return this.MoveQueen(board, startX, startY, endX, endY);
+                if (this.MoveQueen(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
             case this.pieceTypes.king:
-                return this.MoveKing(board, startX, startY, endX, endY);
+                if (this.MoveKing(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
             default:
                 return board;
         }
@@ -108,7 +138,7 @@ class Action{
     }
 
     static Resign(board, side){
-
+        
     }
 
     static RequestDraw(){
@@ -140,6 +170,18 @@ class GeneralRules{
         } 
 
         // check enemie pieces if they can see a square
+        let enemySide = side === "white" ? "black" : "white";
+        for (let i = 0; i < board.length; i++){
+            for (let j = 0; j < board[i].length; j++){
+                if (board[i][j] === this.pieceTypes.empty) continue;
+                if (board[i][j] === this.pieceTypes.king) continue;
+                if (board[i][j] === this.pieceTypes.pawn) continue;
+
+                let piece = board[i][j];
+                let canMove = Action.MovePiece(piece, board, i, j, kingX, kingY);
+                if (canMove !== board) return true;
+            }
+        }
 
         return false;
     }
@@ -147,27 +189,123 @@ class GeneralRules{
 
 class PieceRules{
     static MovePawn(board, startX, startY, endX, endY){
+        if (board[startX][startY] === this.pieceTypes.white_pawn){
+            if (startX === 6 && endX === 4 && startY === endY && board[4][startY] === this.pieceTypes.empty){
+                return true;
+            }
 
+            if (startX - 1 === endX && startY === endY && board[endX][endY] === this.pieceTypes.empty){
+                return true;
+            }
+
+            if (startX - 1 === endX && (startY - 1 === endY || startY + 1 === endY) && board[endX][endY] !== this.pieceTypes.empty){
+                return true;
+            }
+
+            return false;
+        }
+
+        if (board[startX][startY] === this.pieceTypes.black_pawn){
+            if (startX === 1 && endX === 3 && startY === endY && board[3][startY] === this.pieceTypes.empty){
+                return true;
+            }
+
+            if (startX + 1 === endX && startY === endY && board[endX][endY] === this.pieceTypes.empty){
+                return true;
+            }
+
+            if (startX + 1 === endX && (startY - 1 === endY || startY + 1 === endY) && board[endX][endY] !== this.pieceTypes.empty){
+                return true;
+            }
+
+            return false;
+        }
     }
 
     static MoveRook(board, startX, startY, endX, endY){
-
+        if (startX === endX) {
+            if (startY < endY) {
+                for (let i = startY + 1; i < endY; i++) {
+                    if (board[startX][i] !== this.pieceTypes.empty) {
+                        return false;
+                    }
+                }
+            } else {
+                for (let i = startY - 1; i > endY; i--) {
+                    if (board[startX][i] !== this.pieceTypes.empty) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        } else if (startY === endY) {
+            if (startX < endX) {
+                for (let i = startX + 1; i < endX; i++) {
+                    if (board[i][startY] !== this.pieceTypes.empty) {
+                        return false;
+                    }
+                }
+            } else {
+                for (let i = startX - 1; i > endX; i--) {
+                    if (board[i][startY] !== this.pieceTypes.empty) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     static MoveKnight(board, startX, startY, endX, endY){
+        if (startX - 2 === endX && startY - 1 === endY) return true;
+        if (startX - 2 === endX && startY + 1 === endY) return true;
+        if (startX + 2 === endX && startY - 1 === endY) return true;
+        if (startX + 2 === endX && startY + 1 === endY) return true;
+        if (startX - 1 === endX && startY - 2 === endY) return true;
+        if (startX - 1 === endX && startY + 2 === endY) return true;
+        if (startX + 1 === endX && startY - 2 === endY) return true;
+        if (startX + 1 === endX && startY + 2 === endY) return true;
 
+        return false;
     }
 
     static MoveBishop(board, startX, startY, endX, endY){
+        if (Math.abs(startX - endX) !== Math.abs(startY - endY)) return false;
 
+        if (startX < endX && startY < endY){
+            for (let i = 1; i < Math.abs(startX - endX); i++){
+                if (board[startX + i][startY + i] !== this.pieceTypes.empty) return false;
+            }
+        } else if (startX < endX && startY > endY){
+            for (let i = 1; i < Math.abs(startX - endX); i++){
+                if (board[startX + i][startY - i] !== this.pieceTypes.empty) return false;
+            }
+        } else if (startX > endX && startY < endY){
+            for (let i = 1; i < Math.abs(startX - endX); i++){
+                if (board[startX - i][startY + i] !== this.pieceTypes.empty) return false;
+            }
+        } else if (startX > endX && startY > endY){
+            for (let i = 1; i < Math.abs(startX - endX); i++){
+                if (board[startX - i][startY - i] !== this.pieceTypes.empty) return false;
+            }
+        }
+
+        return true;
     }
 
     static MoveQueen(board, startX, startY, endX, endY){
+        if (this.MoveRook(board, startX, startY, endX, endY)) return true;
+        if (this.MoveBishop(board, startX, startY, endX, endY)) return true;
 
+        return false;
     }
 
     static MoveKing(board, startX, startY, endX, endY){
+        if (Math.abs(startX - endX) <= 1 && Math.abs(startY - endY) <= 1) return true;
 
+        return false;
     }
 }
 
