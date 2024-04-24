@@ -83,187 +83,42 @@ class GameGrid{
     this.grid = [];
     this.size = 8;
     
-    this.pieceTypes = {
-      empty: 0,
-      pawn: 1,
-      rook: 2,
-      knight: 3,
-      bishop: 4,
-      queen: 5,
-      king: 6
-    }
+    this.pieceTypes = PieceTypes.types;
 
     this.#populateGrid();
   }
 
   #populateGrid(){
-    const e = this.pieceTypes.empty;
-    const p = this.pieceTypes.pawn;
-    const r = this.pieceTypes.rook;
-    const k = this.pieceTypes.knight;
-    const b = this.pieceTypes.bishop;
-    const q = this.pieceTypes.queen;
-    const K = this.pieceTypes.king;
+    const ee = this.pieceTypes.empty;
+
+    const wp = this.pieceTypes.white_pawn;
+    const wr = this.pieceTypes.white_rook;
+    const wk = this.pieceTypes.white_knight;
+    const wb = this.pieceTypes.white_bishop;
+    const wq = this.pieceTypes.white_queen;
+    const wK = this.pieceTypes.white_king;
+
+    const bp = this.pieceTypes.black_pawn;
+    const br = this.pieceTypes.black_rook;
+    const bk = this.pieceTypes.black_knight;
+    const bb = this.pieceTypes.black_bishop;
+    const bq = this.pieceTypes.black_queen;
+    const bK = this.pieceTypes.black_king;
+
+    
 
     this.grid = [
-      [r, k, b, q, K, b, k, r],
-      [p, p, p, p, p, p, p, p],
-      [e, e, e, e, e, e, e, e],
-      [e, e, e, e, e, e, e, e],
-      [e, e, e, e, e, e, e, e],
-      [e, e, e, e, e, e, e, e],
-      [p, p, p, p, p, p, p, p],
-      [r, k, b, q, K, b, k, r]
+      [br, bk, bb, bq, bK, bb, bk, br],
+      [bp, bp, bp, bp, bp, bp, bp, bp],
+      [ee, ee, ee, ee, ee, ee, ee, ee],
+      [ee, ee, ee, ee, ee, ee, ee, ee],
+      [ee, ee, ee, ee, ee, ee, ee, ee],
+      [ee, ee, ee, ee, ee, ee, ee, ee],
+      [wp, wp, wp, wp, wp, wp, wp, wp],
+      [wr, wk, wb, wq, wK, wb, wk, wr]
     ];
   }
 
-}
-
-
-
-
-
-
-
-class Rules{
-  static rules = [...PieceRules.rules, ...GameRules.rules]
-
-  static pieceTypes = {
-    empty: 0,
-    pawn: 1,
-    rook: 2,
-    knight: 3,
-    bishop: 4,
-    queen: 5,
-    king: 6
-  }
-
-  static MakeMove(piece, startX, startY, endX, endY){
-    if (piece === 0){
-      
-    }
-    
-  }
-
-  
-
-
-
-}
-
-class PieceRules{
-  static pawnRules = [PawnRules.PawnMove, PawnRules.PawnCapture, PawnRules.PawnPromote, PawnRules.PawnEnPassant, PawnRules.PawnDoubleMove]
-  static rookRules = [RookRules.RookMove, RookRules.RookCapture, RookRules.RookCastle]
-  static knightRules = [KnightRules.KnightMove, KnightRules.KnightCapture]
-  static bishopRules = [BishopRules.BishopMove, BishopRules.BishopCapture]
-  static queenRules = [QueenRules.QueenMove, QueenRules.QueenCapture]
-  static kingRules = [KingRules.KingMove, KingRules.KingCapture, KingRules.KingCastle]
-
-  static rules = [...this.pawnRules, ...this.rookRules, ...this.knightRules, ...this.bishopRules, ...this.queenRules, ...this.kingRules]
-
-}
-
-class GameRules{
-  static rules = [this.Check, this.Checkmate, this.Stalemate, this.Draw, this.Resign]
-  static Check(){
-
-  }
-
-  static Checkmate(){
-
-  }
-
-  static Stalemate(){
-
-  }
-
-  static Draw(){
-
-  }
-
-  static Resign(){
-
-  }
-}
-
-class PawnRules{
-  static PawnMove(){
-
-  }
-
-  static PawnCapture(){
-
-  }
-
-  static PawnPromote(){
-  
-  }
-
-  static PawnEnPassant(){
-
-  }
-
-  static PawnDoubleMove(){
-  
-  }
-}
-
-class RookRules{
-  static RookMove(){
-    
-  }
-
-  static RookCapture(){
-
-  }
-
-  static RookCastle(){
-
-  }
-}
-
-class KnightRules{
-  static KnightMove(){
-
-  }
-
-  static KnightCapture(){
-
-  }
-}
-
-class BishopRules{
-  static BishopMove(){
-
-  }
-
-  static BishopCapture(){
-
-  }
-}
-
-class QueenRules{
-  static QueenMove(){
-
-  }
-
-  static QueenCapture(){
-
-  }
-}
-
-class KingRules{
-  static KingMove(){
-
-  }
-
-  static KingCapture(){
-
-  }
-
-  static KingCastle(){
-
-  }
 }
 
 
@@ -288,9 +143,9 @@ class GpuAccelleration{
 
 
 
-window.addEventListener('load', () => {
-  let gameWindowSketch = new p5(sketch);
-});
+// window.addEventListener('load', () => {
+//   let gameWindowSketch = new p5(sketch);
+// });
 
 
 
@@ -389,7 +244,7 @@ function newGeneration(grid, width, height){
 
 
 
-  let oldGrid = generateGameGrid(1000, 1000);
+  let oldGrid = generateGameGrid(100, 100);
 
   let loopProgress = [0, 0]
 
@@ -401,6 +256,7 @@ function newGeneration(grid, width, height){
       p5.noStroke();
       
       p5.background(255);
+      p5.frameRate(10)
     }
 
     p5.draw = () => {
@@ -435,7 +291,7 @@ function newGeneration(grid, width, height){
 
       for (let i = loopProgress[0]; i < newGrid.length; i++){
         for (let j = loopProgress[1]; j < newGrid[i].length; j++){
-          const size = 1;
+          const size = 5;
           
 
           if (performance.now() - start > 1000/60){
@@ -465,5 +321,5 @@ function newGeneration(grid, width, height){
     }
   }
 
-  // let gpuSketchInstance = new p5(gpuSketch);
+  let gpuSketchInstance = new p5(gpuSketch);
   
