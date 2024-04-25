@@ -30,18 +30,34 @@ class ChessBoard{
 
     this.turn = 'white';
 
+    this.selectedPiece = null;
+    
 
-    this.pieceColors = {
-      pawn: 'red',
-      rook: 'blue',
-      knight: 'green',
-      bishop: 'yellow',
-      queen: 'purple',
-      king: 'orange'
-    }
+
+    this.pieceColors = {};
+
+    this.pieceColors[PieceTypes.types.white_pawn] = 'red';
+    this.pieceColors[PieceTypes.types.white_rook] = 'orange';
+    this.pieceColors[PieceTypes.types.white_knight] = 'blue';
+    this.pieceColors[PieceTypes.types.white_bishop] = 'green';
+    this.pieceColors[PieceTypes.types.white_queen] = 'purple';
+    this.pieceColors[PieceTypes.types.white_king] = 'yellow';
+
+    this.pieceColors[PieceTypes.types.black_pawn] = 'red';
+    this.pieceColors[PieceTypes.types.black_rook] = 'orange';
+    this.pieceColors[PieceTypes.types.black_knight] = 'blue';
+    this.pieceColors[PieceTypes.types.black_bishop] = 'green';
+    this.pieceColors[PieceTypes.types.black_queen] = 'purple';
+    this.pieceColors[PieceTypes.types.black_king] = 'yellow';
+
+
+
+
 
     this.#createBoard();
+    this.gameGrid = new GameGrid();
 
+    this.gameGrid.grid = Action.MovePiece(PieceTypes.types.white_pawn, this.gameGrid.grid, 6, 1, 4, 1);
   }
 
   #createBoard(){
@@ -72,8 +88,35 @@ class ChessBoard{
     this.p5.pop();
   }
 
+  #drawPieces(){
+    this.p5.push();
+    this.p5.translate(this.p5.width / 2 - this.boardSize * this.squareSize / 2, this.p5.height / 2 - this.boardSize * this.squareSize / 2);
+
+    for (let i = 0; i < this.boardSize; i++){
+      for (let j = 0; j < this.boardSize; j++){
+        if (this.gameGrid.grid[j][i] !== PieceTypes.types.empty){
+          this.p5.fill(this.pieceColors[this.gameGrid.grid[j][i]]);
+          this.p5.ellipse(i * this.squareSize + this.squareSize / 2, j * this.squareSize + this.squareSize / 2, this.squareSize / 2);
+        }
+      }
+    }
+
+    this.p5.pop();
+  }
+
   Update(){
     this.#drawBoard();
+    this.#drawPieces();
+    
+    if (this.p5.mouseIsPressed && this.selectedPiece === null){
+      this.selectedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
+    }
+
+    else if (!this.p5.mouseIsPressed && this.selectedPiece !== null){
+      const clickedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
+      this.gameGrid.grid = Action.MovePiece(this.selectedPiece.piece, this.gameGrid.grid, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i);
+      this.selectedPiece = null;
+    }
   }
 }
 
@@ -119,6 +162,16 @@ class GameGrid{
     ];
   }
 
+  getClickedPiece(x, y){
+    const size = 80;
+    const i = Math.floor((x - (window.innerWidth / 2 - this.size * size / 2)) / size);
+    const j = Math.floor((y - (window.innerHeight / 2 - this.size * size / 2)) / size);
+
+    return {i, j, piece: this.grid[j][i]};
+  }
+
+  
+
 }
 
 
@@ -143,9 +196,9 @@ class GpuAccelleration{
 
 
 
-// window.addEventListener('load', () => {
-//   let gameWindowSketch = new p5(sketch);
-// });
+window.addEventListener('load', () => {
+  let gameWindowSketch = new p5(sketch);
+});
 
 
 
@@ -321,5 +374,5 @@ function newGeneration(grid, width, height){
     }
   }
 
-  let gpuSketchInstance = new p5(gpuSketch);
+  // let gpuSketchInstance = new p5(gpuSketch);
   
