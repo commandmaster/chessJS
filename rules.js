@@ -40,8 +40,6 @@ class GeneralRules{
             }
         }
 
-        console.log(kingX, kingY);
-
         
 
         //check all opposite color pieces to see if they can see the kind
@@ -101,7 +99,6 @@ class GeneralRules{
             }
         }
 
-        console.log('no check')
         return false;
        
     }
@@ -270,8 +267,11 @@ class Action{
     static MoveKing = PieceRules.MoveKing;
 
     static Check = GeneralRules.Check;
+    
 
     static MovePiece(piece, board, startX, startY, endX, endY, gameHistory){
+        const ogBoard = JSON.parse(JSON.stringify(board));  
+
         if (piece === this.pieceTypes.empty) return board; 
         if (startX < 0 || startX >= board.length || startY < 0 || startY >= board[0].length) return board;
         if (endX < 0 || endX >= board.length || endY < 0 || endY >= board[0].length) return board;
@@ -284,21 +284,32 @@ class Action{
         // check if action is castling or moving a piece
         if (piece === this.pieceTypes.white_king){
             if (startX === 7 && startY === 4 && endX === 7 && endY === 0){
+                if (gameHistory.pieceMoved(this.pieceTypes.white_king)) return board;
+                if (gameHistory.pieceMoved(this.pieceTypes.white_rook)) return board;
                 board = this.Castle(board, "white", "long");
             } else if (startX === 7 && startY === 4 && endX === 7 && endY === 7){
+                if (gameHistory.pieceMoved(this.pieceTypes.white_king)) return board;
+                if (gameHistory.pieceMoved(this.pieceTypes.white_rook)) return board;
                 board = this.Castle(board, "white", "short");
             }
         }
 
         if (piece === this.pieceTypes.black_king){
             if (startX === 0 && startY === 4 && endX === 0 && endY === 0){
+                if (gameHistory.pieceMoved(this.pieceTypes.black_king)) return board;
+                if (gameHistory.pieceMoved(this.pieceTypes.black_rook)) return board;
                 board = this.Castle(board, "black", "long");
             } else if (startX === 0 && startY === 4 && endX === 0 && endY === 7){
+                if (gameHistory.pieceMoved(this.pieceTypes.black_king)) return board;
+                if (gameHistory.pieceMoved(this.pieceTypes.black_rook)) return board;
                 board = this.Castle(board, "black", "short");
             }
         }
 
-        
+        // only happens if the player castle's into check
+        if (this.Check(piece < 7 ? "white" : "black", board, startX, startY, endX, endY)) return ogBoard;
+
+        if (this.CheckMate(ogBoard, piece, startX, startY, endX, endY)) console.log('CheckMate');
         
         
         switch(piece){
@@ -400,6 +411,8 @@ class Action{
             
             default:
                 return board;
+
+           
         }
     }
 
@@ -468,38 +481,50 @@ class Action{
 
     static CheckMate(board, piece, startX, startY, endX, endY){
         const newBoard = JSON.parse(JSON.stringify(board));
-        newBoard[endX][endY] = newBoard[startX][startY];
-        newBoard[startX][startY] = this.pieceTypes.empty;
+        
 
 
-        function compare2DArray(arr1, arr2){
-            if (arr1.length !== arr2.length) return false;
-            for (let i = 0; i < arr1.length; i++){
-                if (arr1[i].length !== arr2[i].length) return false;
-                for (let j = 0; j < arr1[i].length; j++){
-                    if (arr1[i][j] !== arr2[i][j]) return false;
-                }
-            }
-            return true;
-        }
-
+        
         // check for Check 
-        if (this.Check(piece < 7 ? "white" : "black", newBoard, startX, startY, endX, endY)) return false;
+        //find opposite color king
 
-        // check for CheckMate
+        let kingX = -1;
+        let kingY = -1;
+
+        const kingConstant = piece < 7 ? this.pieceTypes.black_king : this.pieceTypes.white_king;
         for (let i = 0; i < newBoard.length; i++){
             for (let j = 0; j < newBoard[i].length; j++){
-                if (newBoard[i][j] === piece){
-                    for (let k = 0; k < newBoard.length; k++){
-                        for (let l = 0; l < newBoard[k].length; l++){
-                            if (compare2DArray(newBoard, this.MovePiece(piece, newBoard, i, j, k, l))){
-                                return false;
-                            }
-                        }
-                    }
+                if (newBoard[i][j] === kingConstant){
+                    kingX = i;
+                    kingY = j;
                 }
             }
         }
+
+        if (!this.Check(piece < 7 ? "black" : "white", newBoard, startX, startY, endX, endY)) return false;
+        
+
+        // check if king can move
+        
+
+        let newKingX = kingX;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX + 1, kingY) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX + 1, kingY)) return false;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX - 1, kingY) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX - 1, kingY)) return false;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX, kingY + 1) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX, kingY + 1)) return false;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX, kingY - 1) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX, kingY - 1)) return false;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX + 1, kingY + 1) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX + 1, kingY + 1)) return false;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX + 1, kingY - 1) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX + 1, kingY - 1)) return false;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX - 1, kingY + 1) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX - 1, kingY + 1)) return false;
+        if (this.MoveKing(newBoard, kingX, kingY, kingX - 1, kingY - 1) && !this.Check(piece < 7 ? "black" : "white", newBoard, kingX, kingY, kingX - 1, kingY - 1)) return false;
+        
+        
+
+       
+
+
+        return true;
+
+       
     }
 
     static Resign(board, side){
@@ -515,8 +540,8 @@ class GameHistory{
     history = [];
     alreadyMovedPieces = [];
 
-    constructor(){
-        
+    constructor(board){
+        this.history.push(board);
     }
 
     AddMove(move){
@@ -524,6 +549,11 @@ class GameHistory{
 
         if (this.alreadyMovedPieces.includes(move.piece)) return;
         this.alreadyMovedPieces.push(move.piece);
+    }
+
+    pieceMoved(piece){
+        const pieceSet = new Set(this.alreadyMovedPieces);
+        return pieceSet.has(piece);
     }
 }
   

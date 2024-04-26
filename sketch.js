@@ -110,8 +110,10 @@ class ChessBoard{
 
     this.#createBoard();
     this.gameGrid = new GameGrid();
+    this.gameHistory = new GameHistory(this.gameGrid.grid);
     
     this.renderer = new PieceRenderer(p5);
+    
     this.renderer.Preload();
 
 
@@ -168,7 +170,13 @@ class ChessBoard{
       }
 
       console.log(Action.CheckMate(this.gameGrid.grid, this.selectedPiece.piece, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i))
-      this.gameGrid.grid = Action.MovePiece(this.selectedPiece.piece, this.gameGrid.grid, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i);
+
+      this.gameGrid.grid = Action.MovePiece(this.selectedPiece.piece, this.gameGrid.grid, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
+      if (this.gameGrid.grid[clickedPiece.j][clickedPiece.i] === this.selectedPiece.piece){
+        this.gameHistory.AddMove({piece: this.selectedPiece.piece, board: this.gameGrid.grid});
+        
+      }
+      
       
       this.selectedPiece = null;
     }
