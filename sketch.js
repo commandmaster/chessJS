@@ -1,12 +1,16 @@
 let gameBoard;
 
+
 const sketch = function(p5) {
+  p5.preload = () => {
+    gameBoard = new ChessBoard(p5);
+  }
+
   p5.setup = () => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight);
     p5.noStroke();
 
-    gameBoard = new ChessBoard(p5);
-    
+  
   }
 
 
@@ -18,6 +22,56 @@ const sketch = function(p5) {
   }
 
 
+}
+
+
+class PieceRenderer{
+  constructor(p5){
+    this.p5 = p5;
+
+    this.images = {};
+  }
+
+  Preload(){
+    this.images[PieceTypes.types.white_pawn] = this.p5.loadImage('images/white_pawn.svg');
+    this.images[PieceTypes.types.white_rook] = this.p5.loadImage('images/white_rook.svg');
+    this.images[PieceTypes.types.white_knight] = this.p5.loadImage('images/white_knight.svg');
+    this.images[PieceTypes.types.white_bishop] = this.p5.loadImage('images/white_bishop.svg');
+    this.images[PieceTypes.types.white_queen] = this.p5.loadImage('images/white_queen.svg');
+    this.images[PieceTypes.types.white_king] = this.p5.loadImage('images/white_king.svg');
+
+    this.images[PieceTypes.types.black_pawn] = this.p5.loadImage('images/black_pawn.svg');
+    this.images[PieceTypes.types.black_rook] = this.p5.loadImage('images/black_rook.svg');
+    this.images[PieceTypes.types.black_knight] = this.p5.loadImage('images/black_knight.svg');
+    this.images[PieceTypes.types.black_bishop] = this.p5.loadImage('images/black_bishop.svg');
+    this.images[PieceTypes.types.black_queen] = this.p5.loadImage('images/black_queen.svg');
+    this.images[PieceTypes.types.black_king] = this.p5.loadImage('images/black_king.svg');
+  }
+
+  DrawPieces(gameGrid, boardSize, squareSize){
+    this.p5.push();
+    this.p5.imageMode(this.p5.CENTER);
+    
+    this.p5.translate(this.p5.width / 2 - boardSize * squareSize / 2, this.p5.height / 2 - boardSize * squareSize / 2);
+    
+
+    for (let i = 0; i < boardSize; i++){
+      for (let j = 0; j < boardSize; j++){
+        if (gameGrid[j][i] !== PieceTypes.types.empty){
+          this.p5.push();
+  
+          const img = this.images[gameGrid[j][i]];
+    
+          this.p5.copy(img, 0, 0, img.width, img.height, i * squareSize, j * squareSize, squareSize, squareSize);
+          this.p5.pop();
+        }
+      }
+    }
+
+
+
+    this.p5.pop();
+  }
 }
 
 
@@ -56,8 +110,11 @@ class ChessBoard{
 
     this.#createBoard();
     this.gameGrid = new GameGrid();
+    
+    this.renderer = new PieceRenderer(p5);
+    this.renderer.Preload();
 
-    this.gameGrid.grid = Action.MovePiece(PieceTypes.types.white_pawn, this.gameGrid.grid, 6, 1, 4, 1);
+
   }
 
   #createBoard(){
@@ -80,7 +137,7 @@ class ChessBoard{
 
     for (let i = 0; i < this.boardSize; i++){
       for (let j = 0; j < this.boardSize; j++){
-        this.p5.fill(this.board[i][j] === 1 ? 255 : 0);
+        this.p5.fill(this.board[i][j] === 1 ? this.p5.color(255) : this.p5.color(0, 100, 0));
         this.p5.rect(i * this.squareSize, j * this.squareSize, this.squareSize, this.squareSize);
       }
     }
@@ -89,19 +146,7 @@ class ChessBoard{
   }
 
   #drawPieces(){
-    this.p5.push();
-    this.p5.translate(this.p5.width / 2 - this.boardSize * this.squareSize / 2, this.p5.height / 2 - this.boardSize * this.squareSize / 2);
-
-    for (let i = 0; i < this.boardSize; i++){
-      for (let j = 0; j < this.boardSize; j++){
-        if (this.gameGrid.grid[j][i] !== PieceTypes.types.empty){
-          this.p5.fill(this.pieceColors[this.gameGrid.grid[j][i]]);
-          this.p5.ellipse(i * this.squareSize + this.squareSize / 2, j * this.squareSize + this.squareSize / 2, this.squareSize / 2);
-        }
-      }
-    }
-
-    this.p5.pop();
+    this.renderer.DrawPieces(this.gameGrid.grid, this.boardSize, this.squareSize);
   }
 
   Update(){
@@ -122,7 +167,9 @@ class ChessBoard{
         return;
       }
 
+      console.log(Action.CheckMate(this.gameGrid.grid, this.selectedPiece.piece, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i))
       this.gameGrid.grid = Action.MovePiece(this.selectedPiece.piece, this.gameGrid.grid, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i);
+      
       this.selectedPiece = null;
     }
   }

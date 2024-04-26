@@ -111,6 +111,9 @@ class PieceRules{
     static pieceTypes = PieceTypes.types;
 
     static capturesOwnPiece(board, startX, startY, endX, endY){
+        if (startX < 0 || startX >= board.length || startY < 0 || startY >= board[0].length) return false;
+        if (endX < 0 || endX >= board.length || endY < 0 || endY >= board[0].length) return false;
+
         if (board[startX][startY] === this.pieceTypes.empty) return false;
         if (board[endX][endY] === this.pieceTypes.empty) return false;
 
@@ -119,6 +122,7 @@ class PieceRules{
 
     static MovePawn(board, startX, startY, endX, endY){
         if (PieceRules.capturesOwnPiece(board, startX, startY, endX, endY)) return false;
+
 
         if (board[startX][startY] === this.pieceTypes.white_pawn){
             if (startX === 6 && endX === 4 && startY === endY && board[4][startY] === this.pieceTypes.empty){
@@ -267,7 +271,7 @@ class Action{
 
     static Check = GeneralRules.Check;
 
-    static MovePiece(piece, board, startX, startY, endX, endY){
+    static MovePiece(piece, board, startX, startY, endX, endY, gameHistory){
         if (piece === this.pieceTypes.empty) return board; 
         if (startX < 0 || startX >= board.length || startY < 0 || startY >= board[0].length) return board;
         if (endX < 0 || endX >= board.length || endY < 0 || endY >= board[0].length) return board;
@@ -280,17 +284,17 @@ class Action{
         // check if action is castling or moving a piece
         if (piece === this.pieceTypes.white_king){
             if (startX === 7 && startY === 4 && endX === 7 && endY === 0){
-                return this.Castle(board, "white", "short");
+                board = this.Castle(board, "white", "long");
             } else if (startX === 7 && startY === 4 && endX === 7 && endY === 7){
-                return this.Castle(board, "white", "long");
+                board = this.Castle(board, "white", "short");
             }
         }
 
         if (piece === this.pieceTypes.black_king){
-            if (startX === 0 && startY === 4 && endX === 0 && endY === 6){
-                return this.Castle(board, "black", "short");
-            } else if (startX === 0 && startY === 4 && endX === 0 && endY === 2){
-                return this.Castle(board, "black", "long");
+            if (startX === 0 && startY === 4 && endX === 0 && endY === 0){
+                board = this.Castle(board, "black", "long");
+            } else if (startX === 0 && startY === 4 && endX === 0 && endY === 7){
+                board = this.Castle(board, "black", "short");
             }
         }
 
@@ -462,12 +466,64 @@ class Action{
 
     }
 
+    static CheckMate(board, piece, startX, startY, endX, endY){
+        const newBoard = JSON.parse(JSON.stringify(board));
+        newBoard[endX][endY] = newBoard[startX][startY];
+        newBoard[startX][startY] = this.pieceTypes.empty;
+
+
+        function compare2DArray(arr1, arr2){
+            if (arr1.length !== arr2.length) return false;
+            for (let i = 0; i < arr1.length; i++){
+                if (arr1[i].length !== arr2[i].length) return false;
+                for (let j = 0; j < arr1[i].length; j++){
+                    if (arr1[i][j] !== arr2[i][j]) return false;
+                }
+            }
+            return true;
+        }
+
+        // check for Check 
+        if (this.Check(piece < 7 ? "white" : "black", newBoard, startX, startY, endX, endY)) return false;
+
+        // check for CheckMate
+        for (let i = 0; i < newBoard.length; i++){
+            for (let j = 0; j < newBoard[i].length; j++){
+                if (newBoard[i][j] === piece){
+                    for (let k = 0; k < newBoard.length; k++){
+                        for (let l = 0; l < newBoard[k].length; l++){
+                            if (compare2DArray(newBoard, this.MovePiece(piece, newBoard, i, j, k, l))){
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     static Resign(board, side){
         
     }
 
     static RequestDraw(){
 
+    }
+}
+
+class GameHistory{
+    history = [];
+    alreadyMovedPieces = [];
+
+    constructor(){
+        
+    }
+
+    AddMove(move){
+        this.history.push(move.board);
+
+        if (this.alreadyMovedPieces.includes(move.piece)) return;
+        this.alreadyMovedPieces.push(move.piece);
     }
 }
   
