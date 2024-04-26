@@ -30,7 +30,7 @@ class GeneralRules{
         let kingX = -1;
         let kingY = -1;
 
-        const kingConstant = side === "black" ? PieceTypes.types.white_king : PieceTypes.types.black_king;        
+        const kingConstant = side === "white" ? PieceTypes.types.white_king : PieceTypes.types.black_king;        
         for (let i = 0; i < newBoard.length; i++){
             for (let j = 0; j < newBoard[i].length; j++){
                 if (newBoard[i][j] === kingConstant){
@@ -54,29 +54,49 @@ class GeneralRules{
                 const queenConstant = side === "black" ? PieceTypes.types.white_queen : PieceTypes.types.black_queen;
                 const kingConstant = side === "black" ? PieceTypes.types.white_king : PieceTypes.types.black_king;
 
-
+         
                 if (newBoard[i][j] === pawnConstant){
-                    if (PieceRules.MovePawn(newBoard, i, j, kingX, kingY)) return true;
+                    
+                    if (PieceRules.MovePawn(newBoard, i, j, kingX, kingY)) {
+                        console.log('attacked by pawn')
+                        return true;
+                    }
                 }
 
                 if (newBoard[i][j] === rookConstant){
-                    if (PieceRules.MoveRook(newBoard, i, j, kingX, kingY)) return true;
+                    if (PieceRules.MoveRook(newBoard, i, j, kingX, kingY)) {
+                        console.log('attacked by rook')
+                        return true;
+                    }
                 }
 
                 if (newBoard[i][j] === knightConstant){
-                    if (PieceRules.MoveKnight(newBoard, i, j, kingX, kingY)) return true;
+                    if (PieceRules.MoveKnight(newBoard, i, j, kingX, kingY)) {
+                        console.log('attacked by knight')
+                        return true;
+                    }
                 }
 
                 if (newBoard[i][j] === bishopConstant){
-                    if (PieceRules.MoveBishop(newBoard, i, j, kingX, kingY)) return true;
+                    if (PieceRules.MoveBishop(newBoard, i, j, kingX, kingY)) {
+                        console.log('attacked by bishop')
+                        return true;
+                    }
                 }
 
                 if (newBoard[i][j] === queenConstant){
-                    if (PieceRules.MoveQueen(newBoard, i, j, kingX, kingY)) return true;
+                    if (PieceRules.MoveQueen(newBoard, i, j, kingX, kingY)) {
+                        console.log(i, j, kingX, kingY)
+                        console.log('attacked by queen')
+                        return true;
+                    }
                 }
 
                 if (newBoard[i][j] === kingConstant){
-                    if (PieceRules.MoveKing(newBoard, i, j, kingX, kingY)) return true;
+                    if (PieceRules.MoveKing(newBoard, i, j, kingX, kingY)) {
+                        console.log('attacked by king')
+                        return true;
+                    }
                 }
             }
         }
@@ -90,8 +110,15 @@ class GeneralRules{
 class PieceRules{
     static pieceTypes = PieceTypes.types;
 
+    static capturesOwnPiece(board, startX, startY, endX, endY){
+        if (board[startX][startY] === this.pieceTypes.empty) return false;
+        if (board[endX][endY] === this.pieceTypes.empty) return false;
+
+        return board[startX][startY] < 7 ? board[endX][endY] < 7 : board[endX][endY] > 6;
+    }
+
     static MovePawn(board, startX, startY, endX, endY){
-        // check for check
+        if (PieceRules.capturesOwnPiece(board, startX, startY, endX, endY)) return false;
 
         if (board[startX][startY] === this.pieceTypes.white_pawn){
             if (startX === 6 && endX === 4 && startY === endY && board[4][startY] === this.pieceTypes.empty){
@@ -109,7 +136,7 @@ class PieceRules{
             return false;
         }
 
-        if (board[startX][startY] === this.pieceTypes.black_pawn){
+        else if (board[startX][startY] === this.pieceTypes.black_pawn){
             if (startX === 1 && endX === 3 && startY === endY && board[3][startY] === this.pieceTypes.empty){
                 return true;
             }
@@ -127,6 +154,8 @@ class PieceRules{
     }
 
     static MoveRook(board, startX, startY, endX, endY){
+        if (PieceRules.capturesOwnPiece(board, startX, startY, endX, endY)) return false;
+
         if (startX === endX) {
             if (startY < endY) {
                 for (let i = startY + 1; i < endY; i++) {
@@ -163,6 +192,8 @@ class PieceRules{
     }
 
     static MoveKnight(board, startX, startY, endX, endY){
+        if (PieceRules.capturesOwnPiece(board, startX, startY, endX, endY)) return false;
+
         if (startX - 2 === endX && startY - 1 === endY) return true;
         if (startX - 2 === endX && startY + 1 === endY) return true;
         if (startX + 2 === endX && startY - 1 === endY) return true;
@@ -176,6 +207,8 @@ class PieceRules{
     }
 
     static MoveBishop(board, startX, startY, endX, endY){
+        if (PieceRules.capturesOwnPiece(board, startX, startY, endX, endY)) return false;
+
         if (Math.abs(startX - endX) !== Math.abs(startY - endY)) return false;
 
         if (startX < endX && startY < endY){
@@ -200,6 +233,8 @@ class PieceRules{
     }
 
     static MoveQueen(board, startX, startY, endX, endY){
+        if (PieceRules.capturesOwnPiece(board, startX, startY, endX, endY)) return false;
+
         if (this.MoveRook(board, startX, startY, endX, endY)) return true;
         if (this.MoveBishop(board, startX, startY, endX, endY)) return true;
 
@@ -207,6 +242,8 @@ class PieceRules{
     }
 
     static MoveKing(board, startX, startY, endX, endY){
+        if (PieceRules.capturesOwnPiece(board, startX, startY, endX, endY)) return false;
+
         if (Math.abs(startX - endX) <= 1 && Math.abs(startY - endY) <= 1) return true;
 
         return false;
@@ -238,54 +275,126 @@ class Action{
         
         if (board[startX][startY] !== piece) return board;
         if (this.Check(piece < 7 ? "white" : "black", board, startX, startY, endX, endY)) return board;
-        
-        
 
+
+        // check if action is castling or moving a piece
+        if (piece === this.pieceTypes.white_king){
+            if (startX === 7 && startY === 4 && endX === 7 && endY === 0){
+                return this.Castle(board, "white", "short");
+            } else if (startX === 7 && startY === 4 && endX === 7 && endY === 7){
+                return this.Castle(board, "white", "long");
+            }
+        }
+
+        if (piece === this.pieceTypes.black_king){
+            if (startX === 0 && startY === 4 && endX === 0 && endY === 6){
+                return this.Castle(board, "black", "short");
+            } else if (startX === 0 && startY === 4 && endX === 0 && endY === 2){
+                return this.Castle(board, "black", "long");
+            }
+        }
+
+        
+        
+        
         switch(piece){
-            case this.pieceTypes.white_pawn || this.pieceTypes.black_pawn:
+            case this.pieceTypes.white_pawn:
                 if (this.MovePawn(board, startX, startY, endX, endY)){
                     board[endX][endY] = board[startX][startY];
                     board[startX][startY] = this.pieceTypes.empty;
                 }
 
                 return board;
-            case this.pieceTypes.white_rook || this.pieceTypes.black_rook:
+
+            case this.pieceTypes.black_pawn:
+                if (this.MovePawn(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
+
+            case this.pieceTypes.white_rook:
                 if (this.MoveRook(board, startX, startY, endX, endY)){
                     board[endX][endY] = board[startX][startY];
                     board[startX][startY] = this.pieceTypes.empty;
                 }
 
                 return board;
-            case this.pieceTypes.white_knight || this.pieceTypes.black_knight:
+
+            case this.pieceTypes.black_rook:
+                if (this.MoveRook(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
+
+            case this.pieceTypes.white_knight:
                 if (this.MoveKnight(board, startX, startY, endX, endY)){
                     board[endX][endY] = board[startX][startY];
                     board[startX][startY] = this.pieceTypes.empty;
                 }
 
                 return board;
-            case this.pieceTypes.white_bishop || this.pieceTypes.black_bishop:
+
+            case this.pieceTypes.black_knight:
+                if (this.MoveKnight(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
+
+            case this.pieceTypes.white_bishop:
                 if (this.MoveBishop(board, startX, startY, endX, endY)){
                     board[endX][endY] = board[startX][startY];
                     board[startX][startY] = this.pieceTypes.empty;
                 }
 
                 return board;
-            case this.pieceTypes.white_queen || this.pieceTypes.black_queen:
+            
+            case this.pieceTypes.black_bishop:
+                if (this.MoveBishop(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
+
+            case this.pieceTypes.white_queen:
                 if (this.MoveQueen(board, startX, startY, endX, endY)){
                     board[endX][endY] = board[startX][startY];
                     board[startX][startY] = this.pieceTypes.empty;
                 }
 
                 return board;
-            case this.pieceTypes.white_king || this.pieceTypes.black_king:
+            
+            case this.pieceTypes.black_queen:
+                if (this.MoveQueen(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
+            
+            case this.pieceTypes.white_king:
                 if (this.MoveKing(board, startX, startY, endX, endY)){
                     board[endX][endY] = board[startX][startY];
                     board[startX][startY] = this.pieceTypes.empty;
                 }
 
                 return board;
+            
+            case this.pieceTypes.black_king:
+                if (this.MoveKing(board, startX, startY, endX, endY)){
+                    board[endX][endY] = board[startX][startY];
+                    board[startX][startY] = this.pieceTypes.empty;
+                }
+
+                return board;
+            
             default:
-                
                 return board;
         }
     }

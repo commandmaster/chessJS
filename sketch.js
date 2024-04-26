@@ -114,6 +114,14 @@ class ChessBoard{
 
     else if (!this.p5.mouseIsPressed && this.selectedPiece !== null){
       const clickedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
+      
+      
+
+      if (clickedPiece.i < 0 || clickedPiece.i >= this.boardSize || clickedPiece.j < 0 || clickedPiece.j >= this.boardSize){
+        this.selectedPiece = null;
+        return;
+      }
+
       this.gameGrid.grid = Action.MovePiece(this.selectedPiece.piece, this.gameGrid.grid, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i);
       this.selectedPiece = null;
     }
@@ -163,14 +171,19 @@ class GameGrid{
   }
 
   getClickedPiece(x, y){
+    try{
     const size = 80;
     const i = Math.floor((x - (window.innerWidth / 2 - this.size * size / 2)) / size);
     const j = Math.floor((y - (window.innerHeight / 2 - this.size * size / 2)) / size);
 
     return {i, j, piece: this.grid[j][i]};
+    }
+
+    catch(e){
+      return {i: -1, j: -1, piece: null};
+    }
   }
 
-  
 
 }
 
