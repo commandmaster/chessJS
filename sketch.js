@@ -199,6 +199,9 @@ class ChessBoard{
         return;
       }
 
+      if (this.selectedPiece === null || this.selectedPiece === undefined){
+        return;
+      }
       
       const newGrid = Action.MovePiece(this.selectedPiece.piece, structuredClone(this.gameGrid.grid), this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
       if (!compareBoards(newGrid, this.gameGrid.grid)){
