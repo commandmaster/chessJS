@@ -1,5 +1,5 @@
 let gameBoard;
-
+let p5Camera;
 
 const sketch = function(p5) {
   p5.preload = () => {
@@ -10,15 +10,22 @@ const sketch = function(p5) {
     p5.createCanvas(p5.windowWidth, p5.windowHeight);
     p5.noStroke();
 
-  
+    p5Camera = new P5Camera(p5, {x: 0, y: 0}, gameBoard.squareSize * gameBoard.boardSize / 2, gameBoard.squareSize * gameBoard.boardSize / 2, 1, 0);
+    p5Camera.ShouldResizeWindow(true);
+    
   }
 
 
   p5.draw = () => {
+    p5Camera.LoopStart();
+    p5Camera.ZoomToFit(gameBoard.squareSize * gameBoard.boardSize, gameBoard.squareSize * gameBoard.boardSize, 0);
+    p5Camera.Update();
     p5.noStroke();
     p5.background(255);
+
     
     gameBoard.Update();
+    p5Camera.LoopEnd();
   }
 
 
@@ -52,7 +59,7 @@ class PieceRenderer{
     this.p5.push();
     this.p5.imageMode(this.p5.CENTER);
     
-    this.p5.translate(this.p5.width / 2 - boardSize * squareSize / 2, this.p5.height / 2 - boardSize * squareSize / 2);
+    
     
 
     for (let i = 0; i < boardSize; i++){
@@ -83,8 +90,6 @@ class ChessBoard{
     this.squareSize = 80;
 
     this.turn = 'white';
-
-    this.selectedPiece = null;
     
 
 
@@ -135,7 +140,6 @@ class ChessBoard{
 
   #drawBoard(){
     this.p5.push();
-    this.p5.translate(this.p5.width / 2 - this.boardSize * this.squareSize / 2, this.p5.height / 2 - this.boardSize * this.squareSize / 2);
 
     for (let i = 0; i < this.boardSize; i++){
       for (let j = 0; j < this.boardSize; j++){
@@ -154,6 +158,22 @@ class ChessBoard{
   Update(){
     this.#drawBoard();
     this.#drawPieces();
+
+    function compareBoards(board1, board2){
+      if (board1.length !== board2.length || board1[0].length !== board2[0].length){
+        return false;
+      }
+
+      for (let i = 0; i < board1.length; i++){
+        for (let j = 0; j < board1[i].length; j++){
+          if (board1[i][j] !== board2[i][j]){
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
     
     if (this.p5.mouseIsPressed && this.selectedPiece === null){
       this.selectedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
@@ -162,16 +182,36 @@ class ChessBoard{
     else if (!this.p5.mouseIsPressed && this.selectedPiece !== null){
       const clickedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
       
-      
+      if (this.selectedPiece !== null && this.selectedPiece !== undefined){
+        if (this.turn === 'white' && this.selectedPiece.piece > 6){
+          this.selectedPiece = null;
+          return;
+        }
+
+        else if (this.turn === 'black' && this.selectedPiece.piece < 7){
+          this.selectedPiece = null;
+          return;
+        }
+      }
 
       if (clickedPiece.i < 0 || clickedPiece.i >= this.boardSize || clickedPiece.j < 0 || clickedPiece.j >= this.boardSize){
         this.selectedPiece = null;
         return;
       }
 
-      console.log(Action.CheckMate(this.gameGrid.grid, this.selectedPiece.piece, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i))
+      
+      const newGrid = Action.MovePiece(this.selectedPiece.piece, structuredClone(this.gameGrid.grid), this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
+      if (!compareBoards(newGrid, this.gameGrid.grid)){
+        this.gameGrid.grid = newGrid;
+        this.turn = this.turn === 'white' ? 'black' : 'white';
+      }
 
-      this.gameGrid.grid = Action.MovePiece(this.selectedPiece.piece, this.gameGrid.grid, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
+      if (Action.CheckMate(structuredClone(this.gameGrid.grid), this.selectedPiece.piece, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i)){
+        // Create a checkmate screen
+
+      }
+      
+
       if (this.gameGrid.grid[clickedPiece.j][clickedPiece.i] === this.selectedPiece.piece){
         this.gameHistory.AddMove({piece: this.selectedPiece.piece, board: this.gameGrid.grid});
         
@@ -226,17 +266,13 @@ class GameGrid{
   }
 
   getClickedPiece(x, y){
-    try{
-    const size = 80;
-    const i = Math.floor((x - (window.innerWidth / 2 - this.size * size / 2)) / size);
-    const j = Math.floor((y - (window.innerHeight / 2 - this.size * size / 2)) / size);
+    const worldPos = p5Camera.ScreenToWorld(x, y);
+    const squareSize = 80;
+
+    const i = Math.floor(worldPos.x / squareSize);
+    const j = Math.floor(worldPos.y / squareSize);
 
     return {i, j, piece: this.grid[j][i]};
-    }
-
-    catch(e){
-      return {i: -1, j: -1, piece: null};
-    }
   }
 
 

@@ -24,7 +24,10 @@ class GeneralRules{
         
         newBoard[endX][endY] = newBoard[startX][startY];
 
-        newBoard[startX][startY] = PieceTypes.types.empty;
+        if (startX !== endX && startY !== endY){
+            newBoard[startX][startY] = PieceTypes.types.empty;
+        }
+        
 
         //find the king
         let kingX = -1;
@@ -247,6 +250,37 @@ class PieceRules{
 
         return false;
     }
+
+    static CanMovePiece(piece, board, startX, startY, endX, endY){
+        switch(piece){
+            case this.pieceTypes.white_pawn:
+                return this.MovePawn(board, startX, startY, endX, endY);
+            case this.pieceTypes.black_pawn:
+                return this.MovePawn(board, startX, startY, endX, endY);
+            case this.pieceTypes.white_rook:
+                return this.MoveRook(board, startX, startY, endX, endY);
+            case this.pieceTypes.black_rook:
+                return this.MoveRook(board, startX, startY, endX, endY);
+            case this.pieceTypes.white_knight:
+                return this.MoveKnight(board, startX, startY, endX, endY);
+            case this.pieceTypes.black_knight:
+                return this.MoveKnight(board, startX, startY, endX, endY);
+            case this.pieceTypes.white_bishop:
+                return this.MoveBishop(board, startX, startY, endX, endY);
+            case this.pieceTypes.black_bishop:
+                return this.MoveBishop(board, startX, startY, endX, endY);
+            case this.pieceTypes.white_queen:
+                return this.MoveQueen(board, startX, startY, endX, endY);
+            case this.pieceTypes.black_queen:
+                return this.MoveQueen(board, startX, startY, endX, endY);
+            case this.pieceTypes.white_king:
+                return this.MoveKing(board, startX, startY, endX, endY);
+            case this.pieceTypes.black_king:
+                return this.MoveKing(board, startX, startY, endX, endY);
+            default:
+                return false;
+        }
+    }
 }
 
 
@@ -264,7 +298,11 @@ class Action{
     static MoveQueen = PieceRules.MoveQueen;
     static MoveKing = PieceRules.MoveKing;
 
+    static CanMovePiece = PieceRules.CanMovePiece;
+
     static Check = GeneralRules.Check;
+
+
     
 
     static MovePiece(piece, board, startX, startY, endX, endY, gameHistory){
@@ -276,6 +314,7 @@ class Action{
         
         
         if (board[startX][startY] !== piece) return board;
+
         if (this.Check(piece < 7 ? "white" : "black", board, startX, startY, endX, endY)) return board;
 
 
@@ -307,111 +346,15 @@ class Action{
         // only happens if the player castle's into check
         if (this.Check(piece < 7 ? "white" : "black", board, startX, startY, endX, endY)) return ogBoard;
 
-        if (this.CheckMate(ogBoard, piece, startX, startY, endX, endY)) console.log('CheckMate');
+       
         
         
-        switch(piece){
-            case this.pieceTypes.white_pawn:
-                if (this.MovePawn(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-
-            case this.pieceTypes.black_pawn:
-                if (this.MovePawn(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-
-            case this.pieceTypes.white_rook:
-                if (this.MoveRook(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-
-            case this.pieceTypes.black_rook:
-                if (this.MoveRook(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-
-            case this.pieceTypes.white_knight:
-                if (this.MoveKnight(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-
-            case this.pieceTypes.black_knight:
-                if (this.MoveKnight(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-
-            case this.pieceTypes.white_bishop:
-                if (this.MoveBishop(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-            
-            case this.pieceTypes.black_bishop:
-                if (this.MoveBishop(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-
-            case this.pieceTypes.white_queen:
-                if (this.MoveQueen(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-            
-            case this.pieceTypes.black_queen:
-                if (this.MoveQueen(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-            
-            case this.pieceTypes.white_king:
-                if (this.MoveKing(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-            
-            case this.pieceTypes.black_king:
-                if (this.MoveKing(board, startX, startY, endX, endY)){
-                    board[endX][endY] = board[startX][startY];
-                    board[startX][startY] = this.pieceTypes.empty;
-                }
-
-                return board;
-            
-            default:
-                return board;
-
-           
+        if (this.CanMovePiece(piece, board, startX, startY, endX, endY)){
+            board[endX][endY] = piece;
+            board[startX][startY] = this.pieceTypes.empty;
         }
+
+        return board;
     }
 
     static Castle(board, side, type){
@@ -478,74 +421,33 @@ class Action{
     }
 
     static CheckMate(board, piece, startX, startY, endX, endY){
-        const newBoard = JSON.parse(JSON.stringify(board));
+        board = structuredClone(board);
 
-        if (!this.Check(piece < 7 ? "black" : "white", board, startX, startY, endX, endY)) return false;
-        
-
-        console.log(newBoard)
-        console.log(piece)
-        for (let i = 0; i < newBoard.length; i++){
-            for (let j = 0; j < newBoard[i].length; j++){
-                for (let h = 0; h < newBoard.length; h++){
-                    if (newBoard[i][j] < 7 && piece >= 7){
-                        if (this.MovePawn(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveRook(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveKnight(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveBishop(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveQueen(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveKing(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-                    }
+        if (!this.Check(piece < 7 ? "black" : "white", board, 0, 0, 0, 0)) return false;
     
-                    else if (newBoard[i][j] >= 7 && piece < 7){
-                        if (this.MovePawn(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
 
-                        if (this.MoveRook(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveKnight(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveBishop(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveQueen(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
-                        }
-
-                        if (this.MoveKing(newBoard, i, j, h, j)){
-                            if (!this.Check(piece < 7 ? "black" : "white", newBoard, i, j, h, j)) return false;
+        let loopCount = 0;
+        
+        for (let i = 0; i < board.length; i++){
+            for (let j = 0; j < board[i].length; j++){
+                if ((board[i][j] < 7 && piece > 6 && board[i][j] !== this.pieceTypes.empty) || (board[i][j] > 6 && piece < 7 && board[i][j] !== this.pieceTypes.empty)){
+                    for (let h = 0; h < board.length; h++){
+                        for (let k = 0; k < board[h].length; k++){
+                            loopCount++;
+                            
+                            if (this.CanMovePiece(board[i][j], board, i, j, h, k) && !this.Check(piece < 7 ? "black" : "white", board, i, j, h, k)){
+                                console.log(i, j, h, k, 'legal')
+                                return false;
+                            }
+                            
                         }
                     }
                 }
-                
             }
         }
 
     
-        console.log('Check')
+        console.log('CheckMate', loopCount)
 
         return true;
 
