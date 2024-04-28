@@ -20,10 +20,6 @@ class P5Camera{
     }
 
     LoopStart(){
-        this.p5.push();
-    }
-
-    Update(){  
         if(this.#resizeWindow){
             this.p5.resizeCanvas(window.innerWidth, window.innerHeight);
         }
@@ -34,8 +30,17 @@ class P5Camera{
         this.p5.translate(-this.x, -this.y);
     }
 
+    Update(){  
+
+        
+
+    }
+
     LoopEnd(){
-        this.p5.pop();
+        this.p5.translate(this.x, this.y);
+        this.p5.rotate(-this.rotation);
+        this.p5.scale(1/this.zoom);
+        this.p5.translate(-this.p5.width/2 - this.centerScreenOffset.x, -this.p5.height/2 - this.centerScreenOffset.y);
     }
 
     ScreenToWorld(x, y){

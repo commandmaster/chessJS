@@ -1,14 +1,22 @@
 let gameBoard;
 let p5Camera;
 
+
+let loadScreenWidget;
+let loadScreenButton;
+
 const sketch = function(p5) {
   p5.preload = () => {
     gameBoard = new ChessBoard(p5);
   }
 
   p5.setup = () => {
+    
     p5.createCanvas(p5.windowWidth, p5.windowHeight);
     p5.noStroke();
+
+    loadScreenWidget = new UIWidget(p5, 0, 0, p5.width, p5.height);
+    loadScreenButton = new UIButton(p5, loadScreenWidget, 0, 0, 100, 100, 'center');
 
     p5Camera = new P5Camera(p5, {x: 0, y: 0}, gameBoard.squareSize * gameBoard.boardSize / 2, gameBoard.squareSize * gameBoard.boardSize / 2, 1, 0);
     p5Camera.ShouldResizeWindow(true);
@@ -17,15 +25,21 @@ const sketch = function(p5) {
 
 
   p5.draw = () => {
-    p5Camera.LoopStart();
-    p5Camera.ZoomToFit(gameBoard.squareSize * gameBoard.boardSize, gameBoard.squareSize * gameBoard.boardSize, 0);
-    p5Camera.Update();
     p5.noStroke();
     p5.background(255);
-
     
+  
+    p5Camera.LoopStart();
+
+    p5Camera.ZoomToFit(gameBoard.squareSize * gameBoard.boardSize, gameBoard.squareSize * gameBoard.boardSize, 0);
+  
     gameBoard.Update();
+    
     p5Camera.LoopEnd();
+ 
+    loadScreenWidget.Update();
+   
+
   }
 
 
