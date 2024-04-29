@@ -8,7 +8,7 @@ const {Action,
     GameHistory,
     PieceTypes,
     GeneralRules,
-    PieceRules} = require('./chessRules.js');
+    PieceRules} = require('./public/rules.js');
 
 
 const app = express();

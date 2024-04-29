@@ -484,3 +484,11 @@ class GameHistory{
     }
 }
   
+module.exports = {
+    Action,
+    GameHistory,
+    PieceTypes,
+    GeneralRules,
+    PieceRules
+    
+}
