@@ -21,7 +21,7 @@ class P5Camera{
 
     LoopStart(){
         if(this.#resizeWindow){
-            this.p5.resizeCanvas(window.innerWidth, window.innerHeight);
+            this.p5.resizeCanvas(this.p5.windowWidth, this.p5.windowHeight);
         }
 
         this.p5.translate(this.p5.width/2 + this.centerScreenOffset.x, this.p5.height/2 + this.centerScreenOffset.y);
@@ -50,7 +50,7 @@ class P5Camera{
         }
     }
 
-    ShouldResizeWindow(bool){
+    ShouldResizeWindow(bool=true){
         this.#resizeWindow = bool;
     }
 

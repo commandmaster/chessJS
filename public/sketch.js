@@ -125,9 +125,14 @@ const MultiplayerSketch = function(p){
 
     const windowX = p.windowWidth - 300;
     const windowY = 30;
+    chatWindow = new ChatBox(p, windowX, windowY, 300, p.windowHeight - windowY);
 
     
-    chatWindow = new ChatBox(p, windowX, windowY, 300, p.windowHeight - windowY);
+
+    p5Camera = new P5Camera(p, {x: 0, y: 0}, mpChessBoard.squareSize * mpChessBoard.boardSize / 2, mpChessBoard.squareSize * mpChessBoard.boardSize / 2, 1, 0);
+    //p5Camera.ShouldResizeWindow(true);
+
+    
 
     
   }
@@ -135,10 +140,20 @@ const MultiplayerSketch = function(p){
   p.draw = () => {
     p.background(255);
 
+    
     networkManager.Update();
     chatWindow.Update();
 
+    p5Camera.LoopStart();
+    p5Camera.ZoomToFit(mpChessBoard.squareSize * mpChessBoard.boardSize, mpChessBoard.squareSize * mpChessBoard.boardSize, 0);
+  
     mpChessBoard.Update();
+    
+    p5Camera.LoopEnd();
+  }
+
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
   }
 }
 
@@ -484,6 +499,8 @@ class MPChessBoard{
     this.boardSize = 8;
     this.squareSize = 80;
 
+    this.gameGrid = new GameGrid();
+
     this.renderer = new PieceRenderer(p5);
     this.renderer.Preload();
 
@@ -495,13 +512,23 @@ class MPChessBoard{
       this.side = side;
       this.opponentSide = side === 'white' ? 'black' : 'white';
 
-      this.gameGrid = data.board;
+      this.gameGrid.grid = data.board;
+
+      if (this.side === 'black') this.gameGrid.grid.reverse();
 
       this.#createBoard();
     });
 
     this.socket.on('takeTurn', (data) => { 
-      this.gameGrid = data.board;
+      this.gameGrid.grid = data.board;
+
+      console.log(data.board)
+
+      if (this.side === 'black'){
+        // flip the board
+        this.gameGrid.grid.reverse();
+      }
+
 
       this.#takeTurn();
     });
@@ -541,7 +568,7 @@ class MPChessBoard{
   Update(){
     if (this.board.length === 0) return;
     this.#drawBoard();
-    this.renderer.DrawPieces(this.gameGrid, this.boardSize, this.squareSize);
+    this.renderer.DrawPieces(this.gameGrid.grid, this.boardSize, this.squareSize);
 
 
     if (!this.#myTurn) return;
@@ -597,8 +624,13 @@ class MPChessBoard{
         this.gameHistory.AddMove({piece: this.selectedPiece.piece, board: this.gameGrid.grid});
       }
       
-      this.socket.emit('endTurn', {board: this.gameGrid, i: this.selectedPiece.i, j: this.selectedPiece.j, h: clickedPiece.j, k: clickedPiece.i});
+      this.gameGrid.grid = newGrid;
+
+      const gridClone = structuredClone(this.gameGrid.grid);
+      gridClone.reverse();
+      this.socket.emit('endTurn', {board: gridClone, i: this.selectedPiece.i, j: this.selectedPiece.j, h: clickedPiece.j, k: clickedPiece.i, piece: this.selectedPiece.piece});
       this.selectedPiece = null;
+      this.#myTurn = false;
     }
 
   }

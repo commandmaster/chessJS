@@ -186,17 +186,47 @@ class BackendClient{
 class Game{
     constructor(room){
         this.room = room;
-        this.gameGrid = new GameGrid(10, 10);
+        this.gameGrid = new GameGrid(8, 8);
 
         this.gameHistory = new GameHistory();
-        
-        
 
+        this.turn = 'white';
     }   
 
 
     setupClient(client){
+        client.socket.emit('createBoard', {side: client.id === Object.keys(this.room.clients)[0] ? 'white' : 'black', board: this.gameGrid.grid})
         
+        if (Object.keys(this.room.clients).length === 2){
+            Object.values(this.room.clients).forEach((cl) => {
+                if (client.id !== cl.id){
+                    client.socket.emit('takeTurn', {board: this.gameGrid.grid});
+                    this.turn = this.turn === 'white' ? 'black' : 'white';
+                }
+            });
+        }
+
+        client.socket.on('endTurn', (data) => {
+            const i = data.i;
+            const j = data.j;
+            const h = data.h;
+            const k = data.k;
+
+            const board = data.board;
+            const piece = data.piece;
+
+            this.gameGrid.grid = board;
+            this.gameHistory.AddMove({piece, board})
+
+            Object.values(this.room.clients).forEach((cl) => {
+                if (client.id !== cl.id){
+                    client.socket.emit('takeTurn', {board});
+                    this.turn = this.turn === 'white' ? 'black' : 'white';
+                }
+            });
+        });
+
+
     }
 
     Update(){
