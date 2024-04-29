@@ -8,15 +8,16 @@ const {Action,
     GameHistory,
     PieceTypes,
     GeneralRules,
-    PieceRules} = require('./public/rules.js');
+    PieceRules} = require('./rules.js');
 
 
 const app = express();
 const port = 3000;
+const localIP = '0.0.0.0'
 
 app.use(express.static('public'));
 
-const server = app.listen(port, () => {
+const server = app.listen(port, localIP, () => {
     console.log(`Server is running on port ${port}`);
 });
 
@@ -50,6 +51,19 @@ class Room{
         });
         this.chat.addClient(client);
         this.game.setupClient(client);
+    }
+
+    reconnectClient(client, gameId){
+        this.clients[client.id] = client;
+        client.socket.on('getPlayerList', (data, callback) => {
+            callback({
+                players: Object.values(this.clients).map((client) => client.name),
+                playerCount: Object.values(this.clients).length,
+                pings: Object.values(this.clients).map((client) => client.ping)
+            });
+        });
+        this.chat.addClient(client);
+        this.game.reconnectClient(client, gameId);
     }
 
     RemoveClient(client){
@@ -90,14 +104,38 @@ class ServerNetworkManager{
     connection(socket){
         console.log('New connection', socket.id);
 
+        let reconnectGameId = null;
+        socket.emit('getGameId', {}, (response) => {
+            if (response === null || response === undefined || response === ''){
+                return;
+            }
+
+            reconnectGameId = response;
+        });
+
+
+       
+
+        for (const room in this.rooms){
+            if (this.rooms[room].game.gameId === reconnectGameId){
+                const backendClient = new BackendClient(socket.id, socket, this.rooms[room]);
+                this.rooms[room].reconnectClient(backendClient, reconnectGameId);
+                return;
+            }
+        }
+
+
         if (Object.keys(this.clients).length % this.maxRoomSize === 0){
             const room = new Room('room' + Object.keys(this.rooms).length, this.io);
             this.rooms[room.id] = room;
         }
 
         const backendClient = new BackendClient(socket.id, socket, this.rooms[Object.keys(this.rooms)[Object.keys(this.rooms).length - 1]]);
-
         this.clients[socket.id] = backendClient;
+
+        
+
+        
         
         this.rooms[Object.keys(this.rooms)[Object.keys(this.rooms).length - 1]].AddClient(backendClient);
         socket.join(this.rooms[Object.keys(this.rooms)[Object.keys(this.rooms).length - 1]].id);
@@ -191,16 +229,87 @@ class Game{
         this.gameHistory = new GameHistory();
 
         this.turn = 'white';
+
+        this.gameId = crypto.randomUUID();
+
+        this.sides = ['white', 'black'];
     }   
 
+    reconnectClient(client){
+        const side = this.sides.pop();
+       
+        client.socket.emit('createBoard', {side, board: this.gameGrid.grid, gameId: this.gameId});
+
+        this.room.io.to(this.room.id).emit('takeTurn', {board: this .gameGrid.grid, side: this.turn});
+
+        
+        client.socket.on('endTurn', (data) => {
+            try{
+
+                function compareBoards(board1, board2){
+                    if (board1.length !== board2.length || board1[0].length !== board2[0].length){
+                    return false;
+                    }
+            
+                    for (let i = 0; i < board1.length; i++){
+                    for (let j = 0; j < board1[i].length; j++){
+                        if (board1[i][j] !== board2[i][j]){
+                        return false;
+                        }
+                    }
+                    }
+            
+                    return true;
+                }
+
+
+                const i = data.i;
+                const j = data.j;
+                const h = data.h;
+                const k = data.k;
+
+                const board = data.board;
+                const piece = data.piece;
+
+
+                if (compareBoards(board, Action.MovePiece(piece, this.gameGrid.grid, i, j, h, k, this.gameHistory))){
+
+                    console.log('Invalid move');
+
+                    return;
+                }
+
+
+                if (Action.CheckMate(board, piece, i, j, h, k)){
+                    console.log('Checkmate');
+                }
+
+
+                this.gameGrid.grid = board;
+                this.gameHistory.AddMove({piece, board})
+
+                this.turn = this.turn === 'white' ? 'black' : 'white';
+                this.room.io.to(this.room.id).emit('takeTurn', {board, side: this.turn});
+            }
+
+            catch(e){
+                console.log('Invalid move')
+                console.error(e);
+                console.log('------------')
+            }
+        });
+            
+        
+    }
 
     setupClient(client){
-        client.socket.emit('createBoard', {side: client.id === Object.keys(this.room.clients)[0] ? 'white' : 'black', board: this.gameGrid.grid})
+        const side = this.sides.pop();
+        client.socket.emit('createBoard', {side, board: this.gameGrid.grid, gameId: this.gameId});
+
+    
         
         if (Object.keys(this.room.clients).length === 2){
             this.room.io.to(this.room.id).emit('takeTurn', {board: this.gameGrid.grid, side: this.turn});
-            this.turn = this.turn === 'white' ? 'black' : 'white';
-             
         }
 
         client.socket.on('endTurn', (data) => {
@@ -248,9 +357,8 @@ class Game{
                 this.gameGrid.grid = board;
                 this.gameHistory.AddMove({piece, board})
 
-                this.room.io.to(this.room.id).emit('takeTurn', {board, side: this.turn});
                 this.turn = this.turn === 'white' ? 'black' : 'white';
-
+                this.room.io.to(this.room.id).emit('takeTurn', {board, side: this.turn});
             }
 
             catch(e){
@@ -262,6 +370,10 @@ class Game{
 
     
 
+    }
+
+    disconnect(client){
+        this.sides.push(client.side);
     }
 
     Update(){
