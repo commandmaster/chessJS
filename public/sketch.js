@@ -36,6 +36,10 @@ const localSketch = function(p){
   
   }
 
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+  }
+
 
 }
 
@@ -102,6 +106,10 @@ const loadingSketch = function(p) {
 
    
 
+  }
+
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
   }
 
 
@@ -500,6 +508,7 @@ class MPChessBoard{
     this.squareSize = 80;
 
     this.gameGrid = new GameGrid();
+    this.gameHistory = new GameHistory(this.gameGrid.grid);
 
     this.renderer = new PieceRenderer(p5);
     this.renderer.Preload();
@@ -514,7 +523,7 @@ class MPChessBoard{
 
       this.gameGrid.grid = data.board;
 
-      if (this.side === 'black') this.gameGrid.grid.reverse();
+
 
       this.#createBoard();
     });
@@ -522,15 +531,10 @@ class MPChessBoard{
     this.socket.on('takeTurn', (data) => { 
       this.gameGrid.grid = data.board;
 
-      console.log(data.board)
-
-      if (this.side === 'black'){
-        // flip the board
-        this.gameGrid.grid.reverse();
+      if (data.side === this.side){
+        console.log('my turn');
+        this.#takeTurn();
       }
-
-
-      this.#takeTurn();
     });
   }
 
@@ -568,7 +572,19 @@ class MPChessBoard{
   Update(){
     if (this.board.length === 0) return;
     this.#drawBoard();
-    this.renderer.DrawPieces(this.gameGrid.grid, this.boardSize, this.squareSize);
+
+    const flippedGrid = structuredClone(this.gameGrid.grid);
+
+    if (this.side === 'black') flippedGrid.reverse();
+
+    if (this.side === 'black'){
+      for (let i = 0; i < flippedGrid.length; i++){
+        flippedGrid[i].reverse();
+      }
+    }
+    
+
+    this.renderer.DrawPieces(flippedGrid, this.boardSize, this.squareSize);
 
 
     if (!this.#myTurn) return;
@@ -595,6 +611,20 @@ class MPChessBoard{
 
     else if (!this.p5.mouseIsPressed && this.selectedPiece !== null){
       const clickedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
+
+      //reverse the selcted piece if the player is black
+      if (this.side === 'black' && this.selectedPiece !== null && this.selectedPiece !== undefined){
+
+        this.selectedPiece.i = this.boardSize - 1 - this.selectedPiece.i;
+        this.selectedPiece.j = this.boardSize - 1 - this.selectedPiece.j;
+
+        clickedPiece.i = this.boardSize - 1 - clickedPiece.i;
+        clickedPiece.j = this.boardSize - 1 - clickedPiece.j;
+
+        this.selectedPiece.piece = this.gameGrid.grid[this.selectedPiece.j][this.selectedPiece.i];
+      }
+
+
       
 
       if (clickedPiece.i < 0 || clickedPiece.i >= this.boardSize || clickedPiece.j < 0 || clickedPiece.j >= this.boardSize){
@@ -603,13 +633,35 @@ class MPChessBoard{
       }
 
       if (this.selectedPiece === null || this.selectedPiece === undefined){
+        this.selectedPiece = null;
+        return;
+      }
+
+      if (this.selectedPiece.piece > 6 && this.side === 'white'){
+        this.selectedPiece = null;
+        return;
+      }
+
+      else if (this.selectedPiece.piece < 7 && this.side === 'black'){
+        this.selectedPiece = null;
         return;
       }
       
+      
+
       const newGrid = Action.MovePiece(this.selectedPiece.piece, structuredClone(this.gameGrid.grid), this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
       if (!compareBoards(newGrid, this.gameGrid.grid)){
         this.gameGrid.grid = newGrid;
         
+        if (this.gameGrid.grid[clickedPiece.j][clickedPiece.i] === this.selectedPiece.piece){
+          this.gameHistory.AddMove({piece: this.selectedPiece.piece, board: this.gameGrid.grid});
+        }
+        
+        const gridClone = structuredClone(this.gameGrid.grid);
+        this.socket.emit('endTurn', {board: gridClone, i: this.selectedPiece.i, j: this.selectedPiece.j, h: clickedPiece.j, k: clickedPiece.i, piece: this.selectedPiece.piece});
+        
+      
+        this.#myTurn = false;
       }
 
       if (Action.CheckMate(structuredClone(this.gameGrid.grid), this.selectedPiece.piece, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i)){
@@ -619,18 +671,8 @@ class MPChessBoard{
 
       }
       
-
-      if (this.gameGrid.grid[clickedPiece.j][clickedPiece.i] === this.selectedPiece.piece){
-        this.gameHistory.AddMove({piece: this.selectedPiece.piece, board: this.gameGrid.grid});
-      }
-      
-      this.gameGrid.grid = newGrid;
-
-      const gridClone = structuredClone(this.gameGrid.grid);
-      gridClone.reverse();
-      this.socket.emit('endTurn', {board: gridClone, i: this.selectedPiece.i, j: this.selectedPiece.j, h: clickedPiece.j, k: clickedPiece.i, piece: this.selectedPiece.piece});
       this.selectedPiece = null;
-      this.#myTurn = false;
+      
     }
 
   }

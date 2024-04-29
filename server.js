@@ -198,34 +198,69 @@ class Game{
         client.socket.emit('createBoard', {side: client.id === Object.keys(this.room.clients)[0] ? 'white' : 'black', board: this.gameGrid.grid})
         
         if (Object.keys(this.room.clients).length === 2){
-            Object.values(this.room.clients).forEach((cl) => {
-                if (client.id !== cl.id){
-                    client.socket.emit('takeTurn', {board: this.gameGrid.grid});
-                    this.turn = this.turn === 'white' ? 'black' : 'white';
-                }
-            });
+            this.room.io.to(this.room.id).emit('takeTurn', {board: this.gameGrid.grid, side: this.turn});
+            this.turn = this.turn === 'white' ? 'black' : 'white';
+             
         }
 
         client.socket.on('endTurn', (data) => {
-            const i = data.i;
-            const j = data.j;
-            const h = data.h;
-            const k = data.k;
+            try{
 
-            const board = data.board;
-            const piece = data.piece;
-
-            this.gameGrid.grid = board;
-            this.gameHistory.AddMove({piece, board})
-
-            Object.values(this.room.clients).forEach((cl) => {
-                if (client.id !== cl.id){
-                    client.socket.emit('takeTurn', {board});
-                    this.turn = this.turn === 'white' ? 'black' : 'white';
+                function compareBoards(board1, board2){
+                    if (board1.length !== board2.length || board1[0].length !== board2[0].length){
+                    return false;
+                    }
+            
+                    for (let i = 0; i < board1.length; i++){
+                    for (let j = 0; j < board1[i].length; j++){
+                        if (board1[i][j] !== board2[i][j]){
+                        return false;
+                        }
+                    }
+                    }
+            
+                    return true;
                 }
-            });
+
+
+                const i = data.i;
+                const j = data.j;
+                const h = data.h;
+                const k = data.k;
+
+                const board = data.board;
+                const piece = data.piece;
+
+
+                if (compareBoards(board, Action.MovePiece(piece, this.gameGrid.grid, i, j, h, k, this.gameHistory))){
+
+                    console.log('Invalid move');
+
+                    return;
+                }
+
+
+                if (Action.CheckMate(board, piece, i, j, h, k)){
+                    console.log('Checkmate');
+                }
+
+
+                this.gameGrid.grid = board;
+                this.gameHistory.AddMove({piece, board})
+
+                this.room.io.to(this.room.id).emit('takeTurn', {board, side: this.turn});
+                this.turn = this.turn === 'white' ? 'black' : 'white';
+
+            }
+
+            catch(e){
+                console.log('Invalid move')
+                console.error(e);
+                console.log('------------')
+            }
         });
 
+    
 
     }
 
