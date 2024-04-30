@@ -454,12 +454,24 @@ class Action{
        
     }
 
-    static Resign(board, side){
-        
-    }
+    static GetAllLegalMoves(board, side){
+        let legalMoves = [];
 
-    static RequestDraw(){
+        for (let i = 0; i < board.length; i++){
+            for (let j = 0; j < board[i].length; j++){
+                if ((side === "white" && board[i][j] < 7) || (side === "black" && board[i][j] > 6)){
+                    for (let h = 0; h < board.length; h++){
+                        for (let k = 0; k < board[h].length; k++){
+                            if (this.CanMovePiece(board[i][j], board, i, j, h, k)){
+                                legalMoves.push({piece: board[i][j], startX: i, startY: j, endX: h, endY: k});
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
+        return legalMoves;
     }
 }
 
@@ -482,13 +494,4 @@ class GameHistory{
         const pieceSet = new Set(this.alreadyMovedPieces);
         return pieceSet.has(piece);
     }
-}
-  
-module.exports = {
-    Action,
-    GameHistory,
-    PieceTypes,
-    GeneralRules,
-    PieceRules
-    
 }

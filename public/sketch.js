@@ -76,6 +76,11 @@ const loadingSketch = function(p) {
     sineWaveAnimation(multiplayerTxt, 8, 0.035);
     sineWaveAnimation(multiplayerButton, 8, 0.035);
 
+    const AIText = new UIText(p, uiHandler.Get('loadScreen'), {x: -130, y: 55, anchor: 'center', text:'AI', textSize: 40, placeMode: 'center', font: pixelFont});
+    const AIButton = new UIButton(p, uiHandler.Get('loadScreen'), {x: 130, y: 50, width: 50, height: 50, anchor: 'center', placeMode: 'center'});
+    sineWaveAnimation(AIText, 8, 0.035);
+    sineWaveAnimation(AIButton, 8, 0.035);
+
 
     localButton.onClick = () => {
       uiHandler.HideAllWidgets();
@@ -89,6 +94,13 @@ const loadingSketch = function(p) {
       uiHandler.HideAllWidgets();
 
       gameWindowSketch = new p5(MultiplayerSketch);
+      p.remove();
+    }
+
+    AIButton.onClick = () => {
+      uiHandler.HideAllWidgets();
+
+      gameWindowSketch = new p5(AISketch);
       p.remove();
     }
 
@@ -157,6 +169,35 @@ const MultiplayerSketch = function(p){
   
     mpChessBoard.Update();
     
+    p5Camera.LoopEnd();
+  }
+
+  p.windowResized = () => {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+  }
+}
+
+let aiChessBoard;
+const AISketch = function(p){
+  p.preload = () => {
+    aiChessBoard = new AIChessBoard(p);
+  }
+
+  p.setup = () => {
+    p.createCanvas(p.windowWidth, p.windowHeight);
+    p.noStroke();
+
+    p5Camera = new P5Camera(p, {x: 0, y: 0}, aiChessBoard.squareSize * aiChessBoard.boardSize / 2, aiChessBoard.squareSize * aiChessBoard.boardSize / 2, 1, 0);
+  }
+
+  p.draw = () => {
+    p.background(255);
+
+
+    p5Camera.LoopStart();
+    p5Camera.ZoomToFit(aiChessBoard.squareSize * aiChessBoard.boardSize, aiChessBoard.squareSize * aiChessBoard.boardSize, 0);
+
+    aiChessBoard.Update();
     p5Camera.LoopEnd();
   }
 
@@ -497,6 +538,232 @@ class PieceRenderer{
   }
 }
 
+class AI{
+  static GetBestMove(grid, depth, side, gameHistory){
+
+
+    function recursiveEndMove(grid, depth, startingSide, move){
+      grid = Action.MovePiece(move.piece, structuredClone(grid), move.i, move.j, move.h, move.k, gameHistory);
+
+      for (let i = 0; i < depth; i++){
+        let opponentBestMove = AI.NextBestMove(grid, startingSide === 'white' ? 'black' : 'white');
+        grid = Action.MovePiece(opponentBestMove.move.piece, structuredClone(grid), opponentBestMove.move.i, opponentBestMove.move.j, opponentBestMove.move.h, opponentBestMove.move.k, gameHistory);
+
+        let bestMove = AI.NextBestMove(grid, startingSide);
+        grid = Action.MovePiece(bestMove.move.piece, structuredClone(grid), bestMove.move.i, bestMove.move.j, bestMove.move.h, bestMove.move.k, gameHistory);
+      }
+      
+
+      return AI.NextBestMove(grid, startingSide).score;
+    }
+
+
+
+    const allLegalMoves = Action.GetAllLegalMoves(grid, side);
+    let bestMove = {score: -Infinity, move: null, board: null};
+    for (let i = 0; i < allLegalMoves.length; i++){
+        let score = recursiveEndMove(grid, depth, side, allLegalMoves[i]);
+        if (score > bestMove.score){
+          function compareBoards(board1, board2){
+            if (board1.length !== board2.length || board1[0].length !== board2[0].length){
+              return false;
+            }
+      
+            for (let i = 0; i < board1.length; i++){
+              for (let j = 0; j < board1[i].length; j++){
+                if (board1[i][j] !== board2[i][j]){
+                  return false;
+                }
+              }
+            }
+      
+            return true;
+          }
+
+          const board = Action.MovePiece(allLegalMoves[i].piece, structuredClone(grid), allLegalMoves[i].i, allLegalMoves[i].j, allLegalMoves[i].h, allLegalMoves[i].k, new GameHistory(grid));
+          if (compareBoards(board, grid)){
+            continue;
+          }
+
+          bestMove.score = score;
+          bestMove.move = allLegalMoves[i];
+          bestMove.board = board;
+        }
+
+    }
+  
+
+    return bestMove;
+ 
+  }
+
+  static NextBestMove(grid, side){
+    let bestMove = {score: -Infinity, move: null, grid: null};
+
+    const legalMoves = Action.GetAllLegalMoves(grid, side);
+
+    for (let i = 0; i < legalMoves.length; i++){
+      const newGrid = Action.MovePiece(legalMoves[i].piece, structuredClone(grid), legalMoves[i].i, legalMoves[i].j, legalMoves[i].h, legalMoves[i].k, new GameHistory(grid));
+      const score = AI.EvaluateMaterial(newGrid, side);
+
+      if (score > bestMove.score){
+        bestMove.score = score;
+        bestMove.move = legalMoves[i];
+        bestMove.grid = newGrid;
+      }
+    }
+
+    return bestMove;
+  }
+
+
+
+  static EvaluateMaterial(grid, maxColor){
+    let score = 0;
+    for (let i = 0; i < grid.length; i++){
+      for (let j = 0; j < grid[i].length; j++){
+        if (grid[i][j] === PieceTypes.types.empty){
+          continue;
+        }
+
+        if (grid[i][j] < 7){
+          score += maxColor === 'white' ? 1 : -1;
+        }
+
+        else{
+          score += maxColor === 'white' ? -1 : 1;
+        }
+      }
+    }
+
+    return score;
+
+  }
+}
+
+
+class AIChessBoard{
+  constructor(p5){
+    this.p5 = p5;
+    this.board = [];
+    this.boardSize = 8;
+    this.squareSize = 80;
+
+    this.#createBoard();
+    this.gameGrid = new GameGrid();
+    this.gameHistory = new GameHistory(this.gameGrid.grid);
+    
+    this.renderer = new PieceRenderer(p5);
+    
+    this.renderer.Preload();
+
+    this.turn = 'white';
+  }
+
+  #createBoard(){
+    let toggle = true;
+    for (let i = 0; i < this.boardSize; i++){
+      toggle = !toggle;
+      this.board.push([]);
+      for (let j = 0; j < this.boardSize; j++){
+        this.board[i].push(toggle ? 0 : 1);
+        toggle = !toggle;
+      }
+      
+    }
+  }
+
+  #drawBoard(){
+    this.p5.push();
+
+    for (let i = 0; i < this.boardSize; i++){
+      for (let j = 0; j < this.boardSize; j++){
+        this.p5.fill(this.board[i][j] === 1 ? this.p5.color(255) : this.p5.color(0, 100, 0));
+        this.p5.rect(i * this.squareSize, j * this.squareSize, this.squareSize, this.squareSize);
+      }
+    }
+
+    this.p5.pop();
+  }
+
+  #drawPieces(){
+    this.renderer.DrawPieces(this.gameGrid.grid, this.boardSize, this.squareSize);
+  }
+
+  #aiMove(){
+    const move = AI.GetBestMove(this.gameGrid.grid, 8, 'black', this.gameHistory);
+    console.log(move);
+    this.gameGrid.grid = move.board;
+    this.gameHistory.AddMove({piece: move.piece, board: this.gameGrid.grid});
+
+  }
+
+  Update(){
+    this.#drawBoard();
+    this.#drawPieces();
+
+    function compareBoards(board1, board2){
+      if (board1.length !== board2.length || board1[0].length !== board2[0].length){
+        return false;
+      }
+
+      for (let i = 0; i < board1.length; i++){
+        for (let j = 0; j < board1[i].length; j++){
+          if (board1[i][j] !== board2[i][j]){
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    if (this.turn === 'black'){
+      this.#aiMove();
+      this.turn = 'white';
+    }
+    
+
+    else{
+      if (this.p5.mouseIsPressed && this.selectedPiece === null){
+        this.selectedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
+      }
+  
+      else if (!this.p5.mouseIsPressed && this.selectedPiece !== null){
+        const clickedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
+        
+        if (clickedPiece.i < 0 || clickedPiece.i >= this.boardSize || clickedPiece.j < 0 || clickedPiece.j >= this.boardSize){
+          this.selectedPiece = null;
+          return;
+        }
+  
+        if (this.selectedPiece === null || this.selectedPiece === undefined){
+          return;
+        }
+        
+        if (this.selectedPiece.piece > 6){
+          this.selectedPiece = null;
+          return;
+        }
+
+        const newGrid = Action.MovePiece(this.selectedPiece.piece, structuredClone(this.gameGrid.grid), this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
+        if (!compareBoards(newGrid, this.gameGrid.grid)){
+          this.gameGrid.grid = newGrid;
+          this.turn = this.turn === 'white' ? 'black' : 'white';
+        }
+  
+        if (this.gameGrid.grid[clickedPiece.j][clickedPiece.i] === this.selectedPiece.piece){
+          this.gameHistory.AddMove({piece: this.selectedPiece.piece, board: this.gameGrid.grid});
+          
+        }
+        
+        
+        this.selectedPiece = null;
+      }
+    
+    }
+  }
+}
 
 class MPChessBoard{
   #myTurn = false;
@@ -517,7 +784,7 @@ class MPChessBoard{
 
 
     this.socket.on('getGameId', (data, callback) => {
-      const gameId = localStorage.getItem('gameId');
+      const gameId = sessionStorage.getItem('gameId');
 
       callback(gameId);
     });
@@ -531,7 +798,7 @@ class MPChessBoard{
       this.gameGrid.grid = data.board;
 
 
-      localStorage.setItem('gameId', data.gameId);
+      sessionStorage.setItem('gameId', data.gameId);
 
       this.#createBoard();
     });

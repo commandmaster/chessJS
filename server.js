@@ -67,6 +67,7 @@ class Room{
     }
 
     RemoveClient(client){
+        this.game.disconnect(client);
         this.chat.removeClient(client);
         delete this.clients[client.id];
     }
@@ -101,25 +102,43 @@ class ServerNetworkManager{
         }, 1000/5);
     }
 
-    connection(socket){
+    async connection(socket){
         console.log('New connection', socket.id);
+ 
+        function getGameId(timeout = 1000){
+            let reconnectGameId = null;
 
-        let reconnectGameId = null;
-        socket.emit('getGameId', {}, (response) => {
-            if (response === null || response === undefined || response === ''){
-                return;
-            }
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve(reconnectGameId);
+                }, timeout);
 
-            reconnectGameId = response;
-        });
+                socket.emit('getGameId', {}, (response) => {
+                    if (response === null || response === undefined || response === ''){
+                        return;
+                    }
 
+                    reconnectGameId = response;
 
+                    resolve(reconnectGameId);
+                });
+            });
+        }
+
+        let reconnectGameId = await getGameId(500);
        
 
         for (const room in this.rooms){
             if (this.rooms[room].game.gameId === reconnectGameId){
                 const backendClient = new BackendClient(socket.id, socket, this.rooms[room]);
+
+                socket.join(this.rooms[room].id);
+                this.clients[socket.id] = backendClient;
                 this.rooms[room].reconnectClient(backendClient, reconnectGameId);
+                
+
+                console.log(reconnectGameId, 'reconnecting', room, this.rooms[room].game.gameId);
+
                 return;
             }
         }
@@ -144,11 +163,15 @@ class ServerNetworkManager{
     disconnection(socket){
         console.log('Disconnected', socket.id);
 
-
         const room = this.clients[socket.id].room;
 
         const chatHistory = room.chat.messageTrackers[socket.id].chatHistory;
         this.rooms[room.id].RemoveClient(this.clients[socket.id]);
+
+        if (room.clients.length === 0){ 
+            delete this.rooms[room.id];
+            console.log(this.rooms)
+        }
 
         //save chat history to txt file
 
@@ -232,14 +255,18 @@ class Game{
 
         this.gameId = crypto.randomUUID();
 
-        this.sides = ['white', 'black'];
+        this.sides = ['black', 'white'];
+
+        this.players = {};
     }   
 
     reconnectClient(client){
-        const side = this.sides.pop();
+        const side = Object.values(this.players).includes('white') ? 'black' : 'white';
+        this.players[client.id] = side;
        
         client.socket.emit('createBoard', {side, board: this.gameGrid.grid, gameId: this.gameId});
 
+        console.log(this.turn)
         this.room.io.to(this.room.id).emit('takeTurn', {board: this .gameGrid.grid, side: this.turn});
 
         
@@ -303,9 +330,12 @@ class Game{
     }
 
     setupClient(client){
+        console.log('Setting up client', client.id);
+
         const side = this.sides.pop();
         client.socket.emit('createBoard', {side, board: this.gameGrid.grid, gameId: this.gameId});
 
+        this.players[client.id] = side;
     
         
         if (Object.keys(this.room.clients).length === 2){
@@ -373,7 +403,15 @@ class Game{
     }
 
     disconnect(client){
-        this.sides.push(client.side);
+        if (this.players[client.id] === 'white'){
+            this.sides.push('white');
+        }
+
+        else{
+            this.sides.push('black');
+        }
+
+        delete this.players[client.id];
     }
 
     Update(){
