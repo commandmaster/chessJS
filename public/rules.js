@@ -1,3 +1,6 @@
+// Contains all the rules for the chess game. This includes the rules for each piece, general rules, and actions that can be taken in the game.
+// The rules are used in the game logic to determine if a move is legal or not.
+
 class PieceTypes{
     static types = {
         empty: 0,

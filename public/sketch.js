@@ -27,12 +27,15 @@ const localSketch = function(p){
     p.noStroke();
     p.background(150);
     
-  
+
+    // Start the camera loop
     p5Camera.LoopStart();
     p5Camera.ZoomToFit(gameBoard.squareSize * gameBoard.boardSize, gameBoard.squareSize * gameBoard.boardSize, 0);
   
+    // Update the game board
     gameBoard.Update();
     
+    // End the camera loop
     p5Camera.LoopEnd();
   
   }
@@ -47,53 +50,65 @@ const localSketch = function(p){
 const loadingSketch = function(p) {
   p.setup = () => {
     
+    // Create a canvas with the size of the window
     p.createCanvas(p.windowWidth, p.windowHeight);
     p.noStroke();
 
-
+    // Function for sine wave animation
     function sineWaveAnimation(uiElement, height, speed){
+      // Add custom behavior to the UI element
       uiElement.addCustomBehavior((uiElement) => {
-        uiElement.y = uiElement.elementOptions.y + Math.sin(p.frameCount / (1/speed)) * height - height;
+      // Update the y position of the UI element using a sine wave
+      uiElement.y = uiElement.elementOptions.y + Math.sin(p.frameCount / (1/speed)) * height - height;
       });
     }
 
 
+    // Add loadScreen widget to uiHandler
     uiHandler.AddWidget('loadScreen', new UIWidget(p));
     
     const pixelFont = new UIFont(p, 'fonts/pixelFont.otf');
 
-
+    // Create chessText UI element
     const chessText = new UIText(p, uiHandler.Get('loadScreen'), {x: 0, y: -450, anchor: 'center', text:'Chess', textSize: 70, placeMode: 'center', font: pixelFont});
     sineWaveAnimation(chessText, 15, 0.035);
 
+    // Create localTxt UI element
     const localTxt = new UIText(p, uiHandler.Get('loadScreen'), {x: -130, y: -155, anchor: 'center', text:'Local 2 Player', textSize: 40, placeMode: 'center', font: pixelFont});
     const localButton = new UIButton(p, uiHandler.Get('loadScreen'), {x: 130, y: -150, width: 50, height: 50, anchor: 'center', placeMode: 'center'});
     sineWaveAnimation(localTxt, 8, 0.035);
     sineWaveAnimation(localButton, 8, 0.035);
-    
 
+    // Create multiplayerTxt UI element
     const multiplayerTxt = new UIText(p, uiHandler.Get('loadScreen'), {x: -130, y: -55, anchor: 'center', text:'Multiplayer', textSize: 40, placeMode: 'center', font: pixelFont});
+    // Create multiplayerButton UI element
     const multiplayerButton = new UIButton(p, uiHandler.Get('loadScreen'), {x: 130, y: -50, width: 50, height: 50, anchor: 'center', placeMode: 'center'});
+    // Apply sine wave animation to multiplayerTxt
     sineWaveAnimation(multiplayerTxt, 8, 0.035);
+    // Apply sine wave animation to multiplayerButton
     sineWaveAnimation(multiplayerButton, 8, 0.035);
 
+    // Create AIText UI element
     const AIText = new UIText(p, uiHandler.Get('loadScreen'), {x: -130, y: 55, anchor: 'center', text:'AI', textSize: 40, placeMode: 'center', font: pixelFont});
+    // Create AIButton UI element
     const AIButton = new UIButton(p, uiHandler.Get('loadScreen'), {x: 130, y: 50, width: 50, height: 50, anchor: 'center', placeMode: 'center'});
+    // Apply sine wave animation to AIText
     sineWaveAnimation(AIText, 8, 0.035);
+    // Apply sine wave animation to AIButton
     sineWaveAnimation(AIButton, 8, 0.035);
 
-
+    // Add click event handler for localButton
     localButton.onClick = () => {
       uiHandler.HideAllWidgets();
 
       gameWindowSketch = new p5(localSketch);
       p.remove();
-      
     }
 
     multiplayerButton.onClick = () => {
       uiHandler.HideAllWidgets();
 
+      // Create a new instance of MultiplayerSketch and assign it to gameWindowSketch
       gameWindowSketch = new p5(MultiplayerSketch);
       p.remove();
     }
@@ -101,11 +116,13 @@ const loadingSketch = function(p) {
     AIButton.onClick = () => {
       uiHandler.HideAllWidgets();
 
+      // Create a new instance of AISketch and assign it to gameWindowSketch
       gameWindowSketch = new p5(AISketch);
       p.remove();
     }
 
 
+    // Set the 'loadScreen' widget as the active widget
     uiHandler.SetActiveWidget('loadScreen');
   }
 
@@ -141,21 +158,18 @@ const MultiplayerSketch = function(p){
   }
 
   p.setup = () => {
+    // Create a canvas with the size of the window
     p.createCanvas(p.windowWidth, p.windowHeight);
     p.noStroke();
 
     const windowX = p.windowWidth - 300;
     const windowY = 30;
+    // Create a chat window
     chatWindow = new ChatBox(p, windowX, windowY, 300, p.windowHeight - windowY);
 
-    
-
+    // Create a camera with initial position and zoom level
     p5Camera = new P5Camera(p, {x: 0, y: 0}, mpChessBoard.squareSize * mpChessBoard.boardSize / 2, mpChessBoard.squareSize * mpChessBoard.boardSize / 2, 1, 0);
-    //p5Camera.ShouldResizeWindow(true);
 
-    
-
-    
   }
 
   p.draw = () => {
@@ -407,7 +421,7 @@ class ChatBox{
     console.log(this.x, this.y, this.w, this.h);
     this.p5.rect(this.x, this.y, this.w, this.h);
 
-    let yCounter = this.y + 20;
+    let yCounter = this.y + 20; // start at 20 to give some padding
     for (let i = this.messages.length - this.maxMessagesOnScreen; i < this.messages.length; i++){
       if (i < 0){
         continue;
@@ -415,7 +429,7 @@ class ChatBox{
 
       const bottomMargin = 75;
       if (yCounter > this.h - bottomMargin){
-        this.messages.shift();
+        this.messages.shift(); // remove the first message
         continue;
       }
 
@@ -423,14 +437,15 @@ class ChatBox{
       this.p5.fill(0);
 
       const maxLength = 25;
-      let name = this.messages[i].name.length > maxLength ? this.messages[i].name.substring(0, maxLength) : this.messages[i].name;
+      let name = this.messages[i].name.length > maxLength ? this.messages[i].name.substring(0, maxLength) : this.messages[i].name; // truncate the name if it is too long
 
-      const splitText = this.messages[i].message.split(/\n/g);
+      const splitText = this.messages[i].message.split(/\n/g); // split the message by newline characters
 
       this.p5.push();
 
       this.p5.textFont('Arial');
       if (this.messages[i].name === "Server"){
+        // Set text style and fill color for server messages
         this.p5.textStyle(this.p5.BOLD);
         this.p5.fill("red");
         name = "SERVER"
@@ -440,12 +455,13 @@ class ChatBox{
         this.p5.fill(this.messages[i].name === networkManager.client.name ? "blue" : "red");
       }
 
-      this.p5.text(`${name}:`, this.x + 5, yCounter);
+      this.p5.text(`${name}:`, this.x + 5, yCounter);  // draw the name of the player
+
 
       this.p5.textStyle(this.p5.NORMAL);
-      this.p5.fill(this.messages[i].name === "Server" ? "red": "black");
+      this.p5.fill(this.messages[i].name === "Server" ? "red": "black"); // set the fill color for the message
       for (let j = 0; j < splitText.length; j++){
-        this.p5.text(`${splitText[j]}`, this.x + 5, yCounter);
+        this.p5.text(`${splitText[j]}`, this.x + 5, yCounter); // draw the message
         yCounter += 25;
       }
 
@@ -459,7 +475,7 @@ class ChatBox{
   Update(){
     this.Show();
     this.inputBox.changed(() => {
-      networkManager.socket.emit('chatMessage', this.inputBox.value());
+      networkManager.socket.emit('chatMessage', this.inputBox.value()); // send the message to the server
       this.inputBox.value('');
     });
   }
@@ -477,7 +493,7 @@ class ChatBox{
   }
 
   get hidden(){
-    return this.isVisibile;
+    return this.isVisibile; // return the opposite of isVisibile
   }
 }
 
@@ -497,9 +513,6 @@ class PieceRenderer{
     this.images = {};
     this.pieces = {}
 
-    this.startLerpFrame = 0;
-    this.lastGameGrid = null;
-    this.currentlyLerping = false;
   }
 
   Preload(){
@@ -524,38 +537,24 @@ class PieceRenderer{
     this.p5.push();
     this.p5.imageMode(this.p5.CENTER);
     
-    if (!this.currentlyLerping){
-      this.startLerpFrame = this.p5.frameCount;
-      this.currentlyLerping = true;
-
-      this.lastGameGrid = gameGrid;
-    }
-
-    const time = 1
-
-    
-
+   
     for (let i = 0; i < boardSize; i++){
       for (let j = 0; j < boardSize; j++){
-        if (gameGrid[j][i] !== PieceTypes.types.empty){
-          this.p5.push();
-  
-          const img = this.images[gameGrid[j][i]];
+      
+      if (gameGrid[j][i] !== PieceTypes.types.empty){
+        this.p5.push();
     
-          const amount = (this.p5.frameCount - this.startLerpFrame) / time;
-          
-          // if (this.lastGameGrid[j][i] !== gameGrid[j][i]){
-          //   // lerp the piece
-          //   const newPiecePosition = 
-          // }
-          const piecePosition = {x: i * squareSize, y: j * squareSize};
+        const img = this.images[gameGrid[j][i]];
+    
+        const piecePosition = {x: i * squareSize, y: j * squareSize};
 
-          this.p5.copy(img, 0, 0, img.width, img.height, piecePosition.x, piecePosition.y, squareSize, squareSize);
-          this.p5.pop();
-        }
+        // Draw the image of the piece at the specified position
+        this.p5.copy(img, 0, 0, img.width, img.height, piecePosition.x, piecePosition.y, squareSize, squareSize);
+        this.p5.pop();
       }
+      
     }
-
+  }
 
 
     this.p5.pop();
@@ -566,6 +565,8 @@ class PieceRenderer{
 }
 
 class AI{
+  // Get the best move for the AI
+  // Using the minimax algorithm with alpha-beta pruning (followed a  video by Sebastian Lague on youtube for this implementation)
   static GetBestMove(grid, depth, side, gameHistory){
     const legalMoves = Action.GetAllLegalMoves(grid, side);
     let bestMove = {score: -Infinity, grid: null, piece: null, i: null, j: null, h: null, k: null};
@@ -600,7 +601,7 @@ class AI{
   } 
 
   
-
+  // Minimax algorithm with alpha-beta pruning (recursive function)
   static minimax(grid, depth, alpha, beta, maximizingPlayer){
     if (depth === 0){
       return AI.EvaluateMaterial(grid);
@@ -645,24 +646,20 @@ class AI{
 
   static EvaluateMaterial(grid){
     const materialValues = {
-      
+      // Define material values for each piece type
+      [PieceTypes.types.white_pawn]: 1,
+      [PieceTypes.types.white_rook]: 5,
+      [PieceTypes.types.white_knight]: 3,
+      [PieceTypes.types.white_bishop]: 3,
+      [PieceTypes.types.white_queen]: 9,
+      [PieceTypes.types.white_king]: 1000,
+      [PieceTypes.types.black_pawn]: -1,
+      [PieceTypes.types.black_rook]: -5,
+      [PieceTypes.types.black_knight]: -3,
+      [PieceTypes.types.black_bishop]: -3,
+      [PieceTypes.types.black_queen]: -9,
+      [PieceTypes.types.black_king]: -1000,
     }
-
-    materialValues[PieceTypes.types.white_pawn] = 1;
-    materialValues[PieceTypes.types.white_rook] = 5;
-    materialValues[PieceTypes.types.white_knight] = 3;
-    materialValues[PieceTypes.types.white_bishop] = 3;
-    materialValues[PieceTypes.types.white_queen] = 9;
-    materialValues[PieceTypes.types.white_king] = 1000;
-    materialValues[PieceTypes.types.black_pawn] = -1;
-    materialValues[PieceTypes.types.black_rook] = -5;
-    materialValues[PieceTypes.types.black_knight] = -3;
-    materialValues[PieceTypes.types.black_bishop] = -3;
-    materialValues[PieceTypes.types.black_queen] = -9;
-    materialValues[PieceTypes.types.black_king] = -1000;
-
-
-
 
     let score = 0;
     for (let i = 0; i < grid.length; i++){
@@ -671,6 +668,7 @@ class AI{
           continue;
         }
 
+        // Add the material value of the piece to the score
         score += materialValues[grid[i][j]];
       }
     }
@@ -683,20 +681,20 @@ class AI{
 
 class AIChessBoard{
   constructor(p5){
-    this.p5 = p5;
-    this.board = [];
-    this.boardSize = 8;
-    this.squareSize = 80;
+    this.p5 = p5; // Store the p5 instance for drawing functions
+    this.board = []; // Initialize an empty board array
+    this.boardSize = 8; // Set the board size to 8
+    this.squareSize = 80; // Set the size of each square on the board
 
-    this.#createBoard();
-    this.gameGrid = new GameGrid();
-    this.gameHistory = new GameHistory(this.gameGrid.grid);
+    this.#createBoard(); // Call the private method to create the board
+    this.gameGrid = new GameGrid(); // Create a new game grid
+    this.gameHistory = new GameHistory(this.gameGrid.grid); // Create a new game history object
     
-    this.renderer = new PieceRenderer(p5);
+    this.renderer = new PieceRenderer(p5); // Create a new piece renderer
     
-    this.renderer.Preload();
+    this.renderer.Preload(); // Preload the piece images
 
-    this.turn = 'white';
+    this.turn = 'white'; // Set the initial turn to white
   }
 
   #createBoard(){
@@ -705,8 +703,9 @@ class AIChessBoard{
       toggle = !toggle;
       this.board.push([]);
       for (let j = 0; j < this.boardSize; j++){
-        this.board[i].push(toggle ? 0 : 1);
-        toggle = !toggle;
+      // Alternate between 0 and 1 to create a checkerboard pattern
+      this.board[i].push(toggle ? 0 : 1);
+      toggle = !toggle;
       }
       
     }
@@ -715,10 +714,13 @@ class AIChessBoard{
   #drawBoard(){
     this.p5.push();
 
+    // Draw the board
     for (let i = 0; i < this.boardSize; i++){
       for (let j = 0; j < this.boardSize; j++){
-        this.p5.fill(this.board[i][j] === 1 ? this.p5.color(255) : this.p5.color(0, 100, 0));
-        this.p5.rect(i * this.squareSize, j * this.squareSize, this.squareSize, this.squareSize);
+      // Set the fill color based on the value in the board array
+      this.p5.fill(this.board[i][j] === 1 ? this.p5.color(255) : this.p5.color(0, 100, 0));
+      // Draw a rectangle for each square on the board
+      this.p5.rect(i * this.squareSize, j * this.squareSize, this.squareSize, this.squareSize);
       }
     }
 
@@ -730,6 +732,8 @@ class AIChessBoard{
   }
 
   #aiMove(){
+    // Get the best move for the AI
+    // Using the minimax algorithm with alpha-beta pruning (followed a video by Sebastian Lague on youtube for this implementation)
     const move = AI.GetBestMove(this.gameGrid.grid, 3, 'black', this.gameHistory);
     console.log(move);
     this.gameGrid.grid = move.grid;
@@ -786,19 +790,23 @@ class AIChessBoard{
         }
 
         
+        // Move the selected piece to the clicked position
         const newGrid = Action.MovePiece(this.selectedPiece.piece, structuredClone(this.gameGrid.grid), this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
+        
+        // Check if the move resulted in a different board configuration
         if (!compareBoards(newGrid, this.gameGrid.grid)){
           console.log(this.selectedPiece.piece);
           this.gameGrid.grid = newGrid;
           this.turn = this.turn === 'white' ? 'black' : 'white';
         }
-  
+        
+        // Check if the clicked position contains the selected piece
         if (this.gameGrid.grid[clickedPiece.j][clickedPiece.i] === this.selectedPiece.piece){
+          // Add the move to the game history
           this.gameHistory.AddMove({piece: this.selectedPiece.piece, board: this.gameGrid.grid});
-          
         }
         
-        
+        // Reset the selected piece
         this.selectedPiece = null;
       }
     
@@ -825,6 +833,9 @@ class MPChessBoard{
 
 
     this.socket.on('getGameId', (data, callback) => {
+      // Get the game id from the session storage
+      // Used to reconnect to the game if the page is refreshed
+
       const gameId = sessionStorage.getItem('gameId');
 
       callback(gameId);
@@ -841,7 +852,7 @@ class MPChessBoard{
 
       sessionStorage.setItem('gameId', data.gameId);
 
-      this.#createBoard();
+      this.#createBoard(); // Create the game board
     });
 
     this.socket.on('takeTurn', (data) => { 
@@ -850,8 +861,8 @@ class MPChessBoard{
       this.gameGrid.grid = data.board;
 
       if (data.side === this.side){
-        console.log('my turn');
-        this.#takeTurn();
+      console.log('my turn');
+      this.#takeTurn(); // Take the turn
       }
     });
   }
@@ -891,20 +902,23 @@ class MPChessBoard{
     if (this.board.length === 0) return;
     this.#drawBoard();
 
+   
     const flippedGrid = structuredClone(this.gameGrid.grid);
 
+    // Reverse the grid if the player is black
     if (this.side === 'black') flippedGrid.reverse();
 
+    // Reverse the rows of the grid if the player is black
     if (this.side === 'black'){
       for (let i = 0; i < flippedGrid.length; i++){
         flippedGrid[i].reverse();
       }
     }
     
-
+    // Draw the pieces on the board
     this.renderer.DrawPieces(flippedGrid, this.boardSize, this.squareSize);
 
-
+    // Check if it is the player's turn and don't do anything if it is not
     if (!this.#myTurn) return;
 
     function compareBoards(board1, board2){
@@ -932,7 +946,6 @@ class MPChessBoard{
 
       //reverse the selcted piece if the player is black
       if (this.side === 'black' && this.selectedPiece !== null && this.selectedPiece !== undefined){
-
         this.selectedPiece.i = this.boardSize - 1 - this.selectedPiece.i;
         this.selectedPiece.j = this.boardSize - 1 - this.selectedPiece.j;
 
@@ -967,8 +980,10 @@ class MPChessBoard{
       
       
 
+      // Move the selected piece to the clicked position
       const newGrid = Action.MovePiece(this.selectedPiece.piece, structuredClone(this.gameGrid.grid), this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
       if (!compareBoards(newGrid, this.gameGrid.grid)){
+        // Send the move to the server
         this.gameGrid.grid = newGrid;
         
         if (this.gameGrid.grid[clickedPiece.j][clickedPiece.i] === this.selectedPiece.piece){
@@ -983,10 +998,16 @@ class MPChessBoard{
       }
 
       if (Action.CheckMate(structuredClone(this.gameGrid.grid), this.selectedPiece.piece, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i)){
-        // Create a checkmate screen
+        //checkmate screen
 
-        
-
+        const checkmateScreen = this.p5.createP('Checkmate');
+        checkmateScreen.style('font-size', '50px');
+        checkmateScreen.style('position', 'absolute');
+        checkmateScreen.style('top', '50%');
+        checkmateScreen.style('left', '50%');
+        checkmateScreen.style('transform', 'translate(-50%, -50%)');
+        checkmateScreen.style('color', 'red');
+        checkmateScreen.style('z-index', '100');
       }
       
       this.selectedPiece = null;
@@ -1078,18 +1099,21 @@ class ChessBoard{
       const clickedPiece = this.gameGrid.getClickedPiece(this.p5.mouseX, this.p5.mouseY);
       
       if (this.selectedPiece !== null && this.selectedPiece !== undefined){
+        // Check if the selected piece is the same color as the current turn
         if (this.turn === 'white' && this.selectedPiece.piece > 6){
           this.selectedPiece = null;
           return;
         }
 
         else if (this.turn === 'black' && this.selectedPiece.piece < 7){
+          // Check if the selected piece is the same color as the current turn
           this.selectedPiece = null;
           return;
         }
       }
 
       if (clickedPiece.i < 0 || clickedPiece.i >= this.boardSize || clickedPiece.j < 0 || clickedPiece.j >= this.boardSize){
+        // Check if the clicked position is within the board
         this.selectedPiece = null;
         return;
       }
@@ -1107,6 +1131,16 @@ class ChessBoard{
       if (Action.CheckMate(structuredClone(this.gameGrid.grid), this.selectedPiece.piece, this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i)){
         // Create a checkmate screen
 
+        //checkmate screen
+
+        const checkmateScreen = this.p5.createP('Checkmate');
+        checkmateScreen.style('font-size', '50px');
+        checkmateScreen.style('position', 'absolute');
+        checkmateScreen.style('top', '50%');
+        checkmateScreen.style('left', '50%');
+        checkmateScreen.style('transform', 'translate(-50%, -50%)');
+        checkmateScreen.style('color', 'red');
+        checkmateScreen.style('z-index', '100');
 
 
       }
@@ -1166,6 +1200,8 @@ class GameGrid{
   }
 
   getClickedPiece(x, y){
+    // Get the piece at the clicked position
+
     const worldPos = p5Camera.ScreenToWorld(x, y);
     const squareSize = 80;
 
@@ -1183,19 +1219,6 @@ class GameGrid{
 
 
 
-
-class GpuAccelleration{
-  constructor(p5){
-    this.p5 = p5;
-    this.gpu = new GPU.GPU();
-
-  }
-
-  Update(){
-    this.p5.push();
-    this.p5.pop();
-  }
-}
 
 let gameWindowSketch;
 window.addEventListener('load', () => {
@@ -1230,152 +1253,3 @@ window.addEventListener('load', () => {
 
 
 
-
-
-
-
-
-// const gpu = new GPU.GPU();
-
-// const generateGameGrid = (width, height) => {
-//   const grid = [];
-//   for (let i = 0; i < height; i++){
-//     grid.push([]);
-//     for (let j = 0; j < width; j++){
-//       grid[i].push(Math.floor(Math.random() * 2));
-//     }
-//   }
-
-//   return grid;
-// }
-
-
-
-// function newGeneration(grid, width, height){
-//   const gameOfLife = gpu.createKernel(function(grid, width, height) {
-//     const x = this.thread.x;
-//     const y = this.thread.y;
-//     let numNeighbors = 0;
-  
-//     for (let i = -1; i < 2; i++){
-//       for (let j = -1; j < 2; j++){
-
-  
-//         const neighborX = x + i;
-//         const neighborY = y + j;
-        
-//         if (neighborX >= 0 && neighborX < width && neighborY >= 0 && neighborY < height){
-//           numNeighbors += grid[neighborY][neighborX];
-//         }
-  
-//       }
-//     }
-  
-  
-//     if (grid[y][x] === 1){
-//       numNeighbors -= 1;
-//       if (numNeighbors < 2 || numNeighbors > 3){
-//         return 0;
-//       }
-  
-//       return 1;
-//     }
-  
-//     else{
-//       if (numNeighbors === 3){
-//         return 1;
-//       }
-  
-//       return 0;
-//     }
-
-
-    
-//   }).setOutput([width, height]);
-  
-
-//   return gameOfLife(grid, width, height);
-// }
-
-
-
-
-//   let oldGrid = generateGameGrid(100, 100);
-
-//   let loopProgress = [0, 0]
-
-//   let timeout;
-
-//   let gpuSketch = function(p5){
-//     p5.setup = () => {
-//       p5.createCanvas(p5.windowWidth, p5.windowHeight);
-//       p5.noStroke();
-      
-//       p5.background(255);
-//       p5.frameRate(10)
-//     }
-
-//     p5.draw = () => {
-//       console.log(p5.frameRate());
-
-
-//       const generationsPerFrame = 1;
-//       let newGrid;
-
-//       for (let i = 0; i < generationsPerFrame; i++){
-//         try{
-//           newGrid = newGeneration(oldGrid, oldGrid[0].length, oldGrid.length);
-//           oldGrid = newGrid;
-//         }
-
-//         catch(e){
-//           newGrid = oldGrid;
-//           console.log(e);
-//         }
-        
-//       }
-       
-      
-
-
-    
-//       const start = performance.now();
-
-      
-
-      
-
-//       for (let i = loopProgress[0]; i < newGrid.length; i++){
-//         for (let j = loopProgress[1]; j < newGrid[i].length; j++){
-//           const size = 5;
-          
-
-//           if (performance.now() - start > 1000/60){
-//             loopProgress = [i, j];
-//             return;
-//           }
-
-//           p5.fill(newGrid[i][j] === 1 ? 0 : 255);
-//           p5.rect(i * size, j * size, size, size);
-          
-
-          
-//         }
-
-//         loopProgress[1] = 0;
-    
-//       }
-
-//       loopProgress = [0, 0];
-
-      
-
-     
-      
-      
-      
-//     }
-//   }
-
-  // let gpuSketchInstance = new p5(gpuSketch);
-  

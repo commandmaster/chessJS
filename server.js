@@ -32,43 +32,48 @@ const io = socket(server);
 
 class Room{
     constructor(id, io){
-        this.id = id;
-        this.io = io;
-        this.clients = {};
+        this.id = id; // Unique identifier for the room
+        this.io = io; // Socket.io instance
+        this.clients = {}; // Object to store connected clients
 
-        this.chat = new Chat(this);
-        this.game = new Game(this);
+        this.chat = new Chat(this); // Create a new Chat instance for the room
+        this.game = new Game(this); // Create a new Game instance for the room
     }
 
     AddClient(client){
         this.clients[client.id] = client;
         client.socket.on('getPlayerList', (data, callback) => {
             callback({
-                players: Object.values(this.clients).map((client) => client.name),
-                playerCount: Object.values(this.clients).length,
-                pings: Object.values(this.clients).map((client) => client.ping)
+            players: Object.values(this.clients).map((client) => client.name), // Get the names of all connected clients
+            playerCount: Object.values(this.clients).length, // Get the total number of connected clients
+            pings: Object.values(this.clients).map((client) => client.ping) // Get the ping values of all connected clients
             });
         });
-        this.chat.addClient(client);
-        this.game.setupClient(client);
+        this.chat.addClient(client); // Add the client to the chat
+        this.game.setupClient(client); // Setup the client for the game
     }
 
     reconnectClient(client, gameId){
         this.clients[client.id] = client;
         client.socket.on('getPlayerList', (data, callback) => {
             callback({
-                players: Object.values(this.clients).map((client) => client.name),
-                playerCount: Object.values(this.clients).length,
-                pings: Object.values(this.clients).map((client) => client.ping)
+            players: Object.values(this.clients).map((client) => client.name), // Get the names of all connected clients
+            playerCount: Object.values(this.clients).length, // Get the total number of connected clients
+            pings: Object.values(this.clients).map((client) => client.ping) // Get the ping values of all connected clients
             });
         });
-        this.chat.addClient(client);
-        this.game.reconnectClient(client, gameId);
+        this.chat.addClient(client); // Add the client to the chat
+        this.game.reconnectClient(client, gameId); // Reconnect the client to the game with the specified gameId
     }
 
     RemoveClient(client){
+        // Disconnect the client from the game
         this.game.disconnect(client);
+
+        // Remove the client from the chat
         this.chat.removeClient(client);
+
+        // Delete the client from the clients object
         delete this.clients[client.id];
     }
 
@@ -105,31 +110,36 @@ class ServerNetworkManager{
     async connection(socket){
         console.log('New connection', socket.id);
  
+        // Function to get the game ID
         function getGameId(timeout = 1000){
             let reconnectGameId = null;
 
             return new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    resolve(reconnectGameId);
-                }, timeout);
+            setTimeout(() => {
+                resolve(reconnectGameId);
+            }, timeout);
 
-                socket.emit('getGameId', {}, (response) => {
-                    if (response === null || response === undefined || response === ''){
-                        return;
-                    }
+            // Emit 'getGameId' event to server
+            socket.emit('getGameId', {}, (response) => {
+                if (response === null || response === undefined || response === ''){
+                return;
+                }
 
-                    reconnectGameId = response;
+                reconnectGameId = response;
 
-                    resolve(reconnectGameId);
-                });
+                resolve(reconnectGameId);
+            });
             });
         }
 
+        // Get the game ID with a timeout of 500 milliseconds
         let reconnectGameId = await getGameId(500);
-       
+           
 
+        // Loop through the rooms to find the matching game ID
         for (const room in this.rooms){
-            if (this.rooms[room].game.gameId === reconnectGameId){
+            if (this.rooms[room].game.gameId === reconnectGameId && this.rooms[room].clients.length < this.maxRoomSize){
+            
                 const backendClient = new BackendClient(socket.id, socket, this.rooms[room]);
 
                 socket.join(this.rooms[room].id);
@@ -261,13 +271,16 @@ class Game{
     }   
 
     reconnectClient(client){
+        // Determine the side of the client based on the existing players
         const side = Object.values(this.players).includes('white') ? 'black' : 'white';
         this.players[client.id] = side;
-       
+           
+        // Emit the 'createBoard' event to the client with the side and game board
         client.socket.emit('createBoard', {side, board: this.gameGrid.grid, gameId: this.gameId});
 
         console.log(this.turn)
-        this.room.io.to(this.room.id).emit('takeTurn', {board: this .gameGrid.grid, side: this.turn});
+        // Emit the 'takeTurn' event to all clients in the room with the current game board and turn side
+        this.room.io.to(this.room.id).emit('takeTurn', {board: this.gameGrid.grid, side: this.turn});
 
         
         client.socket.on('endTurn', (data) => {
@@ -403,6 +416,7 @@ class Game{
     }
 
     disconnect(client){
+        // Check the side of the client and add it back to the available sides
         if (this.players[client.id] === 'white'){
             this.sides.push('white');
         }
@@ -411,6 +425,7 @@ class Game{
             this.sides.push('black');
         }
 
+        // Remove the client from the players list
         delete this.players[client.id];
     }
 
@@ -552,14 +567,17 @@ class ChatTracker{
     }
 
     timeout(){
+        // Emit a chat message to all clients in the room indicating that the user has been timed out
         this.room.io.to(this.room.id).emit('chatMessage', {
             name: 'Server',
             id: 'server',
             message: `${this.name} has been timed out for ${this.timeoutDuration / 1000} seconds`
         });
 
+        // Set the 'isTimedOut' flag to true
         this.isTimedOut = true;
 
+        // After the timeout duration, reset the lastChatTime, chats, and isTimedOut properties
         setTimeout(() => {
             this.lastChatTime = null;
             this.chats = {};

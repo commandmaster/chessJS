@@ -1,3 +1,5 @@
+// p5 Camera to for displaying games
+
 class P5Camera{
     #resizeWindow = false;
     

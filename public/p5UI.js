@@ -1,3 +1,5 @@
+// P5 UI Library
+
 class UIHandler{
     constructor(){
         this.widgets = {}
