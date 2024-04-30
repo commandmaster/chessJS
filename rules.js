@@ -495,3 +495,12 @@ class GameHistory{
         return pieceSet.has(piece);
     }
 }
+
+module.exports = {
+    Action,
+    GameHistory,
+    PieceTypes,
+    PieceRules,
+    GeneralRules
+    
+}

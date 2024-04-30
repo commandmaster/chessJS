@@ -303,7 +303,7 @@ class Game{
 
                     console.log('Invalid move');
 
-                    return;
+                    //return;
                 }
 
 

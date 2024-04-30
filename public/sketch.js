@@ -25,7 +25,7 @@ const localSketch = function(p){
 
   p.draw = () => {
     p.noStroke();
-    p.background(255);
+    p.background(150);
     
   
     p5Camera.LoopStart();
@@ -112,7 +112,7 @@ const loadingSketch = function(p) {
 
   p.draw = () => {
     p.noStroke();
-    p.background(255);
+    p.background(150);
     
   
     uiHandler.Update();
@@ -159,7 +159,7 @@ const MultiplayerSketch = function(p){
   }
 
   p.draw = () => {
-    p.background(255);
+    p.background(150);
 
     
     networkManager.Update();
@@ -192,7 +192,7 @@ const AISketch = function(p){
   }
 
   p.draw = () => {
-    p.background(255);
+    p.background(150);
 
 
     p5Camera.LoopStart();
@@ -495,6 +495,11 @@ class PieceRenderer{
     this.p5 = p5;
 
     this.images = {};
+    this.pieces = {}
+
+    this.startLerpFrame = 0;
+    this.lastGameGrid = null;
+    this.currentlyLerping = false;
   }
 
   Preload(){
@@ -511,13 +516,23 @@ class PieceRenderer{
     this.images[PieceTypes.types.black_bishop] = this.p5.loadImage('images/black_bishop.svg');
     this.images[PieceTypes.types.black_queen] = this.p5.loadImage('images/black_queen.svg');
     this.images[PieceTypes.types.black_king] = this.p5.loadImage('images/black_king.svg');
+
+
   }
 
   DrawPieces(gameGrid, boardSize, squareSize){
     this.p5.push();
     this.p5.imageMode(this.p5.CENTER);
     
-    
+    if (!this.currentlyLerping){
+      this.startLerpFrame = this.p5.frameCount;
+      this.currentlyLerping = true;
+
+      this.lastGameGrid = gameGrid;
+    }
+
+    const time = 1
+
     
 
     for (let i = 0; i < boardSize; i++){
@@ -527,7 +542,15 @@ class PieceRenderer{
   
           const img = this.images[gameGrid[j][i]];
     
-          this.p5.copy(img, 0, 0, img.width, img.height, i * squareSize, j * squareSize, squareSize, squareSize);
+          const amount = (this.p5.frameCount - this.startLerpFrame) / time;
+          
+          // if (this.lastGameGrid[j][i] !== gameGrid[j][i]){
+          //   // lerp the piece
+          //   const newPiecePosition = 
+          // }
+          const piecePosition = {x: i * squareSize, y: j * squareSize};
+
+          this.p5.copy(img, 0, 0, img.width, img.height, piecePosition.x, piecePosition.y, squareSize, squareSize);
           this.p5.pop();
         }
       }
@@ -536,7 +559,10 @@ class PieceRenderer{
 
 
     this.p5.pop();
+
   }
+
+  
 }
 
 class AI{
