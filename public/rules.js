@@ -462,7 +462,7 @@ class Action{
                 if ((side === "white" && board[i][j] < 7) || (side === "black" && board[i][j] > 6)){
                     for (let h = 0; h < board.length; h++){
                         for (let k = 0; k < board[h].length; k++){
-                            if (this.CanMovePiece(board[i][j], board, i, j, h, k)){
+                            if (this.CanMovePiece(board[i][j], board, i, j, h, k) && !this.Check(side, board, i, j, h, k)){
                                 legalMoves.push({piece: board[i][j], i, j, h, k});
                             }
                         }

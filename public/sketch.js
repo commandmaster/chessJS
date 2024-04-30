@@ -1,6 +1,7 @@
 let gameBoard;
 let p5Camera;
 
+
 let uiHandler = new UIHandler();
 
 
@@ -540,85 +541,103 @@ class PieceRenderer{
 
 class AI{
   static GetBestMove(grid, depth, side, gameHistory){
-
-
-    function recursiveEndMove(grid, depth, startingSide, move){
-      grid = Action.MovePiece(move.piece, structuredClone(grid), move.i, move.j, move.h, move.k, gameHistory);
-
-      for (let i = 0; i < depth; i++){
-        let opponentBestMove = AI.NextBestMove(grid, startingSide === 'white' ? 'black' : 'white');
-        grid = Action.MovePiece(opponentBestMove.move.piece, structuredClone(grid), opponentBestMove.move.i, opponentBestMove.move.j, opponentBestMove.move.h, opponentBestMove.move.k, gameHistory);
-
-        let bestMove = AI.NextBestMove(grid, startingSide);
-        grid = Action.MovePiece(bestMove.move.piece, structuredClone(grid), bestMove.move.i, bestMove.move.j, bestMove.move.h, bestMove.move.k, gameHistory);
-      }
-      
-
-      return AI.NextBestMove(grid, startingSide).score;
-    }
-
-
-
-    const allLegalMoves = Action.GetAllLegalMoves(grid, side);
-    let bestMove = {score: -Infinity, move: null, board: null};
-    for (let i = 0; i < allLegalMoves.length; i++){
-        let score = recursiveEndMove(grid, depth, side, allLegalMoves[i]);
-        if (score > bestMove.score){
-          function compareBoards(board1, board2){
-            if (board1.length !== board2.length || board1[0].length !== board2[0].length){
-              return false;
-            }
-      
-            for (let i = 0; i < board1.length; i++){
-              for (let j = 0; j < board1[i].length; j++){
-                if (board1[i][j] !== board2[i][j]){
-                  return false;
-                }
-              }
-            }
-      
-            return true;
-          }
-
-          const board = Action.MovePiece(allLegalMoves[i].piece, structuredClone(grid), allLegalMoves[i].i, allLegalMoves[i].j, allLegalMoves[i].h, allLegalMoves[i].k, new GameHistory(grid));
-          if (compareBoards(board, grid)){
-            continue;
-          }
-
-          bestMove.score = score;
-          bestMove.move = allLegalMoves[i];
-          bestMove.board = board;
-        }
-
-    }
-  
-
-    return bestMove;
- 
-  }
-
-  static NextBestMove(grid, side){
-    let bestMove = {score: -Infinity, move: null, grid: null};
-
     const legalMoves = Action.GetAllLegalMoves(grid, side);
+    let bestMove = {score: -Infinity, grid: null, piece: null, i: null, j: null, h: null, k: null};
 
     for (let i = 0; i < legalMoves.length; i++){
-      const newGrid = Action.MovePiece(legalMoves[i].piece, structuredClone(grid), legalMoves[i].i, legalMoves[i].j, legalMoves[i].h, legalMoves[i].k, new GameHistory(grid));
-      const score = AI.EvaluateMaterial(newGrid, side);
+      const newGrid = Action.MovePiece(legalMoves[i].piece, structuredClone(grid), legalMoves[i].i, legalMoves[i].j, legalMoves[i].h, legalMoves[i].k, gameHistory);
+      let evaluate = AI.minimax(newGrid, depth - 1, -Infinity, Infinity, side === 'white' ? false : true);
 
-      if (score > bestMove.score){
-        bestMove.score = score;
-        bestMove.move = legalMoves[i];
+
+      if (side === 'black') evaluate *= -1;
+
+      if (legalMoves[i].piece === PieceTypes.types.white_pawn || legalMoves[i].piece === PieceTypes.types.black_pawn){
+        evaluate += 0.1;
+      }
+
+      if (legalMoves[i].j > 3 && legalMoves[i].j < 5){
+        evaluate += 0.1;
+      }
+
+      if (evaluate > bestMove.score){
+        bestMove.score = evaluate;
         bestMove.grid = newGrid;
+        bestMove.piece = legalMoves[i].piece;
+        bestMove.i = legalMoves[i].i;
+        bestMove.j = legalMoves[i].j;
+        bestMove.h = legalMoves[i].h;
+        bestMove.k = legalMoves[i].k;
       }
     }
 
     return bestMove;
+  } 
+
+  
+
+  static minimax(grid, depth, alpha, beta, maximizingPlayer){
+    if (depth === 0){
+      return AI.EvaluateMaterial(grid);
+    }
+
+    if (maximizingPlayer){
+      let maxEval = -Infinity;
+      const legalMoves = Action.GetAllLegalMoves(grid, 'white');
+
+      for (let i = 0; i < legalMoves.length; i++){
+        const newGrid = Action.MovePiece(legalMoves[i].piece, structuredClone(grid), legalMoves[i].i, legalMoves[i].j, legalMoves[i].h, legalMoves[i].k, new GameHistory(grid));
+        const evaluate = AI.minimax(newGrid, depth - 1, alpha, beta, false);
+        maxEval = Math.max(maxEval, evaluate);
+        alpha = Math.max(alpha, evaluate);
+        if (beta <= alpha){
+          break;
+        }
+      }
+
+      return maxEval;
+    }
+
+    else{
+      let minEval = Infinity;
+      const legalMoves = Action.GetAllLegalMoves(grid, 'black');
+
+      for (let i = 0; i < legalMoves.length; i++){
+        const newGrid = Action.MovePiece(legalMoves[i].piece, structuredClone(grid), legalMoves[i].i, legalMoves[i].j, legalMoves[i].h, legalMoves[i].k, new GameHistory(grid));
+        const evaluate = AI.minimax(newGrid, depth - 1, alpha, beta, true);
+        minEval = Math.min(minEval, evaluate);
+        beta = Math.min(beta, evaluate);
+        if (beta <= alpha){
+          break;
+        }
+      }
+
+      return minEval;
+    }
   }
 
 
 
-  static EvaluateMaterial(grid, maxColor){
+  static EvaluateMaterial(grid){
+    const materialValues = {
+      
+    }
+
+    materialValues[PieceTypes.types.white_pawn] = 1;
+    materialValues[PieceTypes.types.white_rook] = 5;
+    materialValues[PieceTypes.types.white_knight] = 3;
+    materialValues[PieceTypes.types.white_bishop] = 3;
+    materialValues[PieceTypes.types.white_queen] = 9;
+    materialValues[PieceTypes.types.white_king] = 1000;
+    materialValues[PieceTypes.types.black_pawn] = -1;
+    materialValues[PieceTypes.types.black_rook] = -5;
+    materialValues[PieceTypes.types.black_knight] = -3;
+    materialValues[PieceTypes.types.black_bishop] = -3;
+    materialValues[PieceTypes.types.black_queen] = -9;
+    materialValues[PieceTypes.types.black_king] = -1000;
+
+
+
+
     let score = 0;
     for (let i = 0; i < grid.length; i++){
       for (let j = 0; j < grid[i].length; j++){
@@ -626,13 +645,7 @@ class AI{
           continue;
         }
 
-        if (grid[i][j] < 7){
-          score += maxColor === 'white' ? 1 : -1;
-        }
-
-        else{
-          score += maxColor === 'white' ? -1 : 1;
-        }
+        score += materialValues[grid[i][j]];
       }
     }
 
@@ -691,9 +704,9 @@ class AIChessBoard{
   }
 
   #aiMove(){
-    const move = AI.GetBestMove(this.gameGrid.grid, 8, 'black', this.gameHistory);
+    const move = AI.GetBestMove(this.gameGrid.grid, 3, 'black', this.gameHistory);
     console.log(move);
-    this.gameGrid.grid = move.board;
+    this.gameGrid.grid = move.grid;
     this.gameHistory.AddMove({piece: move.piece, board: this.gameGrid.grid});
 
   }
@@ -746,8 +759,10 @@ class AIChessBoard{
           return;
         }
 
+        
         const newGrid = Action.MovePiece(this.selectedPiece.piece, structuredClone(this.gameGrid.grid), this.selectedPiece.j, this.selectedPiece.i, clickedPiece.j, clickedPiece.i, this.gameHistory);
         if (!compareBoards(newGrid, this.gameGrid.grid)){
+          console.log(this.selectedPiece.piece);
           this.gameGrid.grid = newGrid;
           this.turn = this.turn === 'white' ? 'black' : 'white';
         }
